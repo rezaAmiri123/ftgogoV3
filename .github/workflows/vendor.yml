@@ -22,19 +22,11 @@ jobs:
         #   token: ${{ secrets.WORKFLOW_GIT_ACCESS_TOKEN }}
       - name: Run mod vendor
         # working-directory: ./${{ inputs.service }}
-        run: |
-          # services=( shared-go serviceapis accounting customer-web consumer order cosec order-history restaurant kitchen delivery store-web testing )
-          services=( consumer accounting customer-web order order-history kitchen delivery)
-          for service in "${services[@]}"
-          do
-            echo "${service}"
-            # do something on $service #
-            cd "${service}"
-            go mod tidy
-            go mod download
-            go mod vendor
-            cd ..
-          done
+        run: |       
+          go mod tidy
+          go mod download
+          go mod vendor
+       
           git config --global user.name "action-user"
           git config --global user.email "action-user@example.com"
           git add .
