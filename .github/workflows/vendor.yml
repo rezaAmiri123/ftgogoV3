@@ -1,0 +1,47 @@
+name: main
+
+on:
+  push:
+    branches: [ "vendor" ]
+
+jobs:
+  # test:
+  #   strategy:
+  #     max-parallel: 1
+  #     matrix:
+  #       services: [pkg, baskets, cosec, depot, notifications, ordering, payments, search, stores, users]
+  #   uses: ./.github/workflows/download.yml
+  #   with:
+  #     service: ${{ matrix.services }}
+  #   secrets: inherit
+  download:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        # with:
+        #   token: ${{ secrets.WORKFLOW_GIT_ACCESS_TOKEN }}
+      - name: Run mod vendor
+        # working-directory: ./${{ inputs.service }}
+        run: |
+          # services=( shared-go serviceapis accounting customer-web consumer order cosec order-history restaurant kitchen delivery store-web testing )
+          services=( consumer accounting customer-web order order-history kitchen delivery)
+          for service in "${services[@]}"
+          do
+            echo "${service}"
+            # do something on $service #
+            cd "${service}"
+            go mod tidy
+            go mod download
+            go mod vendor
+            cd ..
+          done
+          git config --global user.name "action-user"
+          git config --global user.email "action-user@example.com"
+          git add .
+          result=$(git status | grep "nothing to commit, working tree clean" |wc -l )
+          if [[ $result -eq 0 ]]
+            then
+            git commit -m "download vedor "
+            git push origin vendor
+          fi
+          
