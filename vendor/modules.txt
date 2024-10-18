@@ -1,3 +1,6 @@
+# github.com/go-chi/chi/v5 v5.1.0
+## explicit; go 1.14
+github.com/go-chi/chi/v5
 # github.com/golang/protobuf v1.5.2
 ## explicit; go 1.9
 github.com/golang/protobuf/jsonpb
@@ -6,6 +9,9 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
+# github.com/kelseyhightower/envconfig v1.4.0
+## explicit
+github.com/kelseyhightower/envconfig
 # github.com/mattn/go-colorable v0.1.13
 ## explicit; go 1.15
 github.com/mattn/go-colorable
@@ -17,6 +23,9 @@ github.com/mattn/go-isatty
 github.com/rs/zerolog
 github.com/rs/zerolog/internal/cbor
 github.com/rs/zerolog/internal/json
+# github.com/stackus/dotenv v0.0.0-20221206033122-02295762494b
+## explicit; go 1.17
+github.com/stackus/dotenv
 # github.com/stackus/errors v0.1.6
 ## explicit; go 1.13
 github.com/stackus/errors
@@ -28,6 +37,9 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
+# golang.org/x/sync v0.0.0-20190423024810-112230192c58
+## explicit
+golang.org/x/sync/errgroup
 # golang.org/x/sys v0.12.0
 ## explicit; go 1.17
 golang.org/x/sys/unix

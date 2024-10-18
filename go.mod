@@ -3,8 +3,12 @@ module github.com/rezaAmiri123/ftgogoV3
 go 1.22
 
 require (
+	github.com/go-chi/chi/v5 v5.1.0
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/rs/zerolog v1.33.0
+	github.com/stackus/dotenv v0.0.0-20221206033122-02295762494b
 	github.com/stackus/errors v0.1.6
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.28.0
 )
