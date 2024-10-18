@@ -46,11 +46,15 @@ github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.19
 ## explicit; go 1.15
 github.com/mattn/go-isatty
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
 # github.com/rs/zerolog v1.33.0
 ## explicit; go 1.15
 github.com/rs/zerolog
 github.com/rs/zerolog/internal/cbor
 github.com/rs/zerolog/internal/json
+github.com/rs/zerolog/pkgerrors
 # github.com/stackus/dotenv v0.0.0-20221206033122-02295762494b
 ## explicit; go 1.17
 github.com/stackus/dotenv
