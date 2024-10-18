@@ -1,6 +1,6 @@
 module github.com/rezaAmiri123/ftgogoV3
 
-go 1.22.2
+go 1.22
 
 require github.com/stackus/errors v0.1.6
 

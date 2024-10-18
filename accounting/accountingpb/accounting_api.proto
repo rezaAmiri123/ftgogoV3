@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package accountngpb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/accountng/accountngpb";
+
+service AccountingService {
+    rpc GetAccount(GetAccountRequest) returns (GetAccountResponse);
+    rpc DisableAccount(DisableAccountRequest) returns (DisableAccountResponse);
+    rpc EnableAccount(EnableAccountRequest) returns (EnableAccountResponse);
+  }
+  
+  message GetAccountRequest {
+    string AccountID = 1;
+  }
+  
+  message GetAccountResponse {
+    string AccountID = 1;
+    bool Enabled = 2;
+  }
+  
+  message DisableAccountRequest {
+    string AccountID = 1;
+  }
+  
+  message DisableAccountResponse {}
+
+  message EnableAccountRequest {
+    string AccountID = 1;
+  }
+
+  message EnableAccountResponse {}
+  
