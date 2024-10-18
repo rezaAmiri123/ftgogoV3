@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package errors;
-
-message ErrorType {
-  string TypeCode = 1;
-  int64 HTTPCode = 2;
-  int64 GRPCCode = 3;
-}
