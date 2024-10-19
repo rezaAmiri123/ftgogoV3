@@ -8,18 +8,20 @@ import (
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rezaAmiri123/ftgogoV3/accounting"
+	"github.com/rezaAmiri123/ftgogoV3/consumer"
 	"github.com/rezaAmiri123/ftgogoV3/internal/config"
 	"github.com/rezaAmiri123/ftgogoV3/internal/logger"
 	"github.com/rezaAmiri123/ftgogoV3/internal/monolith"
 	"github.com/rezaAmiri123/ftgogoV3/internal/rpc"
 	"github.com/rezaAmiri123/ftgogoV3/internal/waiter"
 	"github.com/rezaAmiri123/ftgogoV3/internal/web"
+	"github.com/rezaAmiri123/ftgogoV3/restaurant"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
-func main(){
-	if err := run();err!= nil{
+func main() {
+	if err := run(); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
@@ -56,6 +58,8 @@ func run() (err error) {
 	// init modules
 	m.modules = []monolith.Module{
 		&accounting.Module{},
+		&consumer.Module{},
+		&restaurant.Module{},
 	}
 
 	if err = m.startupModules(); err != nil {

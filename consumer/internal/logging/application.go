@@ -45,3 +45,9 @@ func (a Application)RemoveConsumerAddress(ctx context.Context, remove applicatio
 	defer func() { a.logger.Info().Err(err).Msg("<--consumer.RemoveConsumerAddress") }()
 	return a.App.RemoveConsumerAddress(ctx, remove)
 }
+
+func (a Application)GetConsumerAddress(ctx context.Context, get application.GetConsumerAddress) (_ domain.Address,err error){
+	a.logger.Info().Msg("-->consumer.GetConsumerAddress")
+	defer func() { a.logger.Info().Err(err).Msg("<--consumer.GetConsumerAddress") }()
+	return a.App.GetConsumerAddress(ctx, get)
+}

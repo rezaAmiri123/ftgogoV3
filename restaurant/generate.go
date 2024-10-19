@@ -1,3 +1,3 @@
-package consumer
+package restaurant
 
 //go:generate buf generate

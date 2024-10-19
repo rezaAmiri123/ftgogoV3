@@ -23,12 +23,17 @@ type (
 		ConsumerID string
 		AddressID  string
 	}
+	GetConsumerAddress struct {
+		ConsumerID string
+		AddressID  string
+	}
 
 	App interface {
 		RegisterConsumer(ctx context.Context, register RegisterConsumer) error
 		GetConsumer(ctx context.Context, get GetConsumer) (*domain.Consumer, error)
 		UpdateConsumerAddress(ctx context.Context, update UpdateConsumerAddress) error
 		RemoveConsumerAddress(ctx context.Context, remove RemoveConsumerAddress) error
+		GetConsumerAddress(ctx context.Context, get GetConsumerAddress) (domain.Address, error)
 	}
 
 	Application struct {
@@ -70,7 +75,7 @@ func (a Application) UpdateConsumerAddress(ctx context.Context, update UpdateCon
 	return a.consumers.Update(ctx, consumer)
 }
 
-func (a Application) RemoveConsumerAddress(ctx context.Context, remove RemoveConsumerAddress) error{
+func (a Application) RemoveConsumerAddress(ctx context.Context, remove RemoveConsumerAddress) error {
 	consumer, err := a.consumers.Find(ctx, remove.ConsumerID)
 	if err != nil {
 		return err
@@ -81,4 +86,16 @@ func (a Application) RemoveConsumerAddress(ctx context.Context, remove RemoveCon
 	}
 
 	return a.consumers.Update(ctx, consumer)
+}
+
+func (a Application) GetConsumerAddress(ctx context.Context, get GetConsumerAddress) (domain.Address, error) {
+	consumer, err := a.consumers.Find(ctx, get.ConsumerID)
+	if err != nil {
+		return domain.Address{}, err
+	}
+	address, err := consumer.GetAddress(get.AddressID)
+	if err != nil {
+		return domain.Address{}, err
+	}
+	return address, nil
 }

@@ -41,3 +41,12 @@ func (c *Consumer) RemoveAddress(id string) error {
 	delete(c.Addresses, id)
 	return nil
 }
+
+func (c *Consumer) GetAddress(id string) (Address, error) {
+	address, ok := c.Addresses[id]
+	if !ok {
+		return Address{}, ErrAddressDoesNotExist
+	}
+
+	return address, nil
+}
