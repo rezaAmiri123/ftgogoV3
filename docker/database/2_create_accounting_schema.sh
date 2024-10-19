@@ -2,7 +2,7 @@
 set -e
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "ftgogo" <<-EOSQL
-    CERATE SCHEMA accounting;
+    CREATE SCHEMA accounting;
 
     CREATE TABLE accounting.accounts(
         id          text NOT NULL,

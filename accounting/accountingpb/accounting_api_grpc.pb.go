@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AccountingService_GetAccount_FullMethodName     = "/accountngpb.AccountingService/GetAccount"
-	AccountingService_DisableAccount_FullMethodName = "/accountngpb.AccountingService/DisableAccount"
-	AccountingService_EnableAccount_FullMethodName  = "/accountngpb.AccountingService/EnableAccount"
+	AccountingService_GetAccount_FullMethodName     = "/accountingpb.AccountingService/GetAccount"
+	AccountingService_DisableAccount_FullMethodName = "/accountingpb.AccountingService/DisableAccount"
+	AccountingService_EnableAccount_FullMethodName  = "/accountingpb.AccountingService/EnableAccount"
 )
 
 // AccountingServiceClient is the client API for AccountingService service.
@@ -162,7 +162,7 @@ func _AccountingService_EnableAccount_Handler(srv interface{}, ctx context.Conte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AccountingService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "accountngpb.AccountingService",
+	ServiceName: "accountingpb.AccountingService",
 	HandlerType: (*AccountingServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

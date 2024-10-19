@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package accountngpb;
-option go_package = "github.com/rezaAmiri123/ftgogoV3/accountng/accountngpb";
+package accountingpb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/accountng/accountingpb";
 
 service AccountingService {
     rpc GetAccount(GetAccountRequest) returns (GetAccountResponse);

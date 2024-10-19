@@ -42,30 +42,33 @@ func New(options ...WaiterOption) Waiter {
 	w := &waiter{
 		fns: []WaitFunc{},
 	}
-	w.ctx, w.cancel = signal.NotifyContext(w.ctx,
-		os.Interrupt,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-	)
+	w.ctx, w.cancel = context.WithCancel(cfg.parentCtx)
+	if cfg.catchSignals {
+		w.ctx, w.cancel = signal.NotifyContext(w.ctx,
+			os.Interrupt,
+			syscall.SIGINT,
+			syscall.SIGTERM,
+			syscall.SIGQUIT,
+		)
+	}
 
 	return w
 }
 
-func(w *waiter)Add(fns ...WaitFunc){
+func (w *waiter) Add(fns ...WaitFunc) {
 	w.fns = append(w.fns, fns...)
 }
 
-func(w *waiter)Wait() error{
-	g,ctx :=errgroup.WithContext(w.ctx)
-	
+func (w *waiter) Wait() error {
+	g, ctx := errgroup.WithContext(w.ctx)
+
 	g.Go(func() error {
 		<-ctx.Done()
 		w.cancel()
 		return nil
 	})
 
-	for _, fn := range w.fns{
+	for _, fn := range w.fns {
 		fn := fn
 		g.Go(func() error {
 			return fn(ctx)
@@ -75,10 +78,10 @@ func(w *waiter)Wait() error{
 	return g.Wait()
 }
 
-func(w *waiter)Context() context.Context{
+func (w *waiter) Context() context.Context {
 	return w.ctx
 }
 
-func(w *waiter)cancelFunc() context.CancelFunc{
+func (w *waiter) cancelFunc() context.CancelFunc {
 	return w.cancel
 }
