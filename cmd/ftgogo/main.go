@@ -9,12 +9,14 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rezaAmiri123/ftgogoV3/accounting"
 	"github.com/rezaAmiri123/ftgogoV3/consumer"
+	"github.com/rezaAmiri123/ftgogoV3/delivery"
 	"github.com/rezaAmiri123/ftgogoV3/internal/config"
 	"github.com/rezaAmiri123/ftgogoV3/internal/logger"
 	"github.com/rezaAmiri123/ftgogoV3/internal/monolith"
 	"github.com/rezaAmiri123/ftgogoV3/internal/rpc"
 	"github.com/rezaAmiri123/ftgogoV3/internal/waiter"
 	"github.com/rezaAmiri123/ftgogoV3/internal/web"
+	"github.com/rezaAmiri123/ftgogoV3/kitchen"
 	"github.com/rezaAmiri123/ftgogoV3/restaurant"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -60,6 +62,8 @@ func run() (err error) {
 		&accounting.Module{},
 		&consumer.Module{},
 		&restaurant.Module{},
+		&kitchen.Module{},
+		&delivery.Module{},
 	}
 
 	if err = m.startupModules(); err != nil {

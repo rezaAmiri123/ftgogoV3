@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package deliverypb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/delivery/deliverypb";
+
+import "google/protobuf/timestamp.proto";
+
+service DeliveryService {
+  rpc CreateDelivery(CreateDeliveryRequest) returns (CreateDeliveryResponse);
+  rpc GetDelivery(GetDeliveryRequest) returns (GetDeliveryResponse);
+}
+
+message Delivery {
+  string DeliveryID = 1;
+  string RestaurantID = 2;
+  string AssignedCourierID = 3;
+  string Status = 4;
+  Address PickUpAddress = 5;
+  Address DeliveryAddress = 6;
+  google.protobuf.Timestamp PickupTime = 7;
+  google.protobuf.Timestamp ReadyBy = 8;
+}
+
+message CreateDeliveryRequest{
+  string ID =1;
+  string RestaurantID = 2;
+  Address DeliveryAddress = 3; 
+}
+
+message CreateDeliveryResponse{}
+
+message GetDeliveryRequest {
+  string DeliveryID = 1;
+}
+
+message GetDeliveryResponse {
+  Delivery Delivery = 1;
+}
+
+message Address {
+  string Street1 = 1;
+  string Street2 = 2;
+  string City = 3;
+  string State = 4;
+  string Zip = 5;
+}

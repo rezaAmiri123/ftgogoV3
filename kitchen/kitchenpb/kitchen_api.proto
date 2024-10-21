@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package kitchenpb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/kitchen/kitchenpb";
+
+import "google/protobuf/timestamp.proto";
+
+service KitchenService {
+  rpc CreateTicket(CreateTicketRequest) returns (CreateTicketResponse);
+  rpc GetTicket(GetTicketRequest) returns (GetTicketResponse);
+  rpc GetRestaurant(GetRestaurantRequest) returns (GetRestaurantResponse);
+  rpc AcceptTicket(AcceptTicketRequest) returns (AcceptTicketResponse);
+}
+
+message CreateTicketRequest{
+  string RestaurantID = 1;
+  repeated LineItem LineItems = 2;
+}
+
+message CreateTicketResponse{
+  string TicketID = 1;
+}
+
+message GetTicketRequest {
+  string TicketID = 1;
+}
+
+message GetTicketResponse{
+  string RestaurantID = 1;
+  repeated LineItem LineItems = 2;
+  string Status = 3;
+}
+
+message GetRestaurantRequest {
+  string RestaurantID = 1;
+}
+
+message GetRestaurantResponse {
+  string RestaurantID = 1;
+}
+
+message AcceptTicketRequest {
+  string TicketID = 1;
+  google.protobuf.Timestamp ReadyBy = 2;
+}
+
+message AcceptTicketResponse {
+  string TicketID = 1;
+}
+
+message LineItem {
+  string MenuItemID = 1;
+  string Name = 2;
+  int64 Quantity = 3;
+}

@@ -55,6 +55,9 @@ func (r RestaurantRepository) Find(ctx context.Context, restaurantID string) (*d
 		&address,
 		&menuItems,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	err = json.Unmarshal(address, &restaurant.Address)
 	if err != nil {
