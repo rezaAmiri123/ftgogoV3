@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package orderpb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/order/orderpb";
+
+import "google/protobuf/timestamp.proto";
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+}
+
+
+message Order {
+  string OrderID = 1;
+  string ConsumerID = 2;
+  string RestaurantID = 3;
+  int64 OrderTotal = 4;
+  string Status = 5;
+}
+
+message CreateOrderRequest {
+  string ConsumerID = 1;
+  string RestaurantID = 2;
+  google.protobuf.Timestamp DeliverAt = 3;
+  Address DeliverTo = 4;
+  MenuItemQuantities LineItems = 5;
+}
+
+message CreateOrderResponse {
+  string OrderID = 1;
+}
+
+message GetOrderRequest {
+  string OrderID = 1;
+}
+
+message GetOrderResponse {
+  Order Order = 1;
+}
+
+message Address {
+  string Street1 = 1;
+  string Street2 = 2;
+  string City = 3;
+  string State = 4;
+  string Zip = 5;
+}
+
+message MenuItemQuantities {
+  map<string, int64> Items = 1;
+}

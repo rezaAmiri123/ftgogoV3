@@ -17,6 +17,7 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/internal/waiter"
 	"github.com/rezaAmiri123/ftgogoV3/internal/web"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen"
+	"github.com/rezaAmiri123/ftgogoV3/order"
 	"github.com/rezaAmiri123/ftgogoV3/restaurant"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -64,6 +65,7 @@ func run() (err error) {
 		&restaurant.Module{},
 		&kitchen.Module{},
 		&delivery.Module{},
+		&order.Module{},
 	}
 
 	if err = m.startupModules(); err != nil {
