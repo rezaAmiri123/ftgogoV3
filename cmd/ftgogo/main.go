@@ -9,6 +9,7 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rezaAmiri123/ftgogoV3/accounting"
 	"github.com/rezaAmiri123/ftgogoV3/consumer"
+	customerweb "github.com/rezaAmiri123/ftgogoV3/customer-web"
 	"github.com/rezaAmiri123/ftgogoV3/delivery"
 	"github.com/rezaAmiri123/ftgogoV3/internal/config"
 	"github.com/rezaAmiri123/ftgogoV3/internal/logger"
@@ -66,6 +67,7 @@ func run() (err error) {
 		&kitchen.Module{},
 		&delivery.Module{},
 		&order.Module{},
+		&customerweb.Module{},
 	}
 
 	if err = m.startupModules(); err != nil {
