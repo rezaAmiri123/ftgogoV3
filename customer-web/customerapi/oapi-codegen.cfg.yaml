@@ -1,0 +1,7 @@
+output: web_server_api.gen.go
+package: customerapi
+generate:
+  - types
+  - chi-server
+  - spec
+  - client
