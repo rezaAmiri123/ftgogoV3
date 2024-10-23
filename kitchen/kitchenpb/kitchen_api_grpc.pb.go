@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	KitchenService_CreateTicket_FullMethodName  = "/kitchenpb.KitchenService/CreateTicket"
-	KitchenService_GetTicket_FullMethodName     = "/kitchenpb.KitchenService/GetTicket"
-	KitchenService_GetRestaurant_FullMethodName = "/kitchenpb.KitchenService/GetRestaurant"
-	KitchenService_AcceptTicket_FullMethodName  = "/kitchenpb.KitchenService/AcceptTicket"
+	KitchenService_CreateTicket_FullMethodName        = "/kitchenpb.KitchenService/CreateTicket"
+	KitchenService_GetTicket_FullMethodName           = "/kitchenpb.KitchenService/GetTicket"
+	KitchenService_GetRestaurant_FullMethodName       = "/kitchenpb.KitchenService/GetRestaurant"
+	KitchenService_AcceptTicket_FullMethodName        = "/kitchenpb.KitchenService/AcceptTicket"
+	KitchenService_ConfirmCreateTicket_FullMethodName = "/kitchenpb.KitchenService/ConfirmCreateTicket"
 )
 
 // KitchenServiceClient is the client API for KitchenService service.
@@ -33,6 +34,7 @@ type KitchenServiceClient interface {
 	GetTicket(ctx context.Context, in *GetTicketRequest, opts ...grpc.CallOption) (*GetTicketResponse, error)
 	GetRestaurant(ctx context.Context, in *GetRestaurantRequest, opts ...grpc.CallOption) (*GetRestaurantResponse, error)
 	AcceptTicket(ctx context.Context, in *AcceptTicketRequest, opts ...grpc.CallOption) (*AcceptTicketResponse, error)
+	ConfirmCreateTicket(ctx context.Context, in *ConfirmCreateTicketRequest, opts ...grpc.CallOption) (*ConfirmCreateTicketResponse, error)
 }
 
 type kitchenServiceClient struct {
@@ -79,6 +81,15 @@ func (c *kitchenServiceClient) AcceptTicket(ctx context.Context, in *AcceptTicke
 	return out, nil
 }
 
+func (c *kitchenServiceClient) ConfirmCreateTicket(ctx context.Context, in *ConfirmCreateTicketRequest, opts ...grpc.CallOption) (*ConfirmCreateTicketResponse, error) {
+	out := new(ConfirmCreateTicketResponse)
+	err := c.cc.Invoke(ctx, KitchenService_ConfirmCreateTicket_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KitchenServiceServer is the server API for KitchenService service.
 // All implementations must embed UnimplementedKitchenServiceServer
 // for forward compatibility
@@ -87,6 +98,7 @@ type KitchenServiceServer interface {
 	GetTicket(context.Context, *GetTicketRequest) (*GetTicketResponse, error)
 	GetRestaurant(context.Context, *GetRestaurantRequest) (*GetRestaurantResponse, error)
 	AcceptTicket(context.Context, *AcceptTicketRequest) (*AcceptTicketResponse, error)
+	ConfirmCreateTicket(context.Context, *ConfirmCreateTicketRequest) (*ConfirmCreateTicketResponse, error)
 	mustEmbedUnimplementedKitchenServiceServer()
 }
 
@@ -105,6 +117,9 @@ func (UnimplementedKitchenServiceServer) GetRestaurant(context.Context, *GetRest
 }
 func (UnimplementedKitchenServiceServer) AcceptTicket(context.Context, *AcceptTicketRequest) (*AcceptTicketResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AcceptTicket not implemented")
+}
+func (UnimplementedKitchenServiceServer) ConfirmCreateTicket(context.Context, *ConfirmCreateTicketRequest) (*ConfirmCreateTicketResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfirmCreateTicket not implemented")
 }
 func (UnimplementedKitchenServiceServer) mustEmbedUnimplementedKitchenServiceServer() {}
 
@@ -191,6 +206,24 @@ func _KitchenService_AcceptTicket_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KitchenService_ConfirmCreateTicket_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmCreateTicketRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KitchenServiceServer).ConfirmCreateTicket(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KitchenService_ConfirmCreateTicket_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KitchenServiceServer).ConfirmCreateTicket(ctx, req.(*ConfirmCreateTicketRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KitchenService_ServiceDesc is the grpc.ServiceDesc for KitchenService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -213,6 +246,10 @@ var KitchenService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AcceptTicket",
 			Handler:    _KitchenService_AcceptTicket_Handler,
+		},
+		{
+			MethodName: "ConfirmCreateTicket",
+			Handler:    _KitchenService_ConfirmCreateTicket_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -24,6 +24,7 @@ var (
 	ErrLineItemsCannotBeBlank    = errors.Wrap(errors.ErrBadRequest, "the Line items cannot be blank")
 	ErrDeliverAtCannotBeBlank    = errors.Wrap(errors.ErrBadRequest, "the deliver at cannot be blank")
 	ErrDeliverToCannotBeBlank    = errors.Wrap(errors.ErrBadRequest, "the deliverTo cannot be blank")
+	ErrOrderInvalidStatus        = errors.Wrap(errors.ErrFailedPrecondition, "order status does not allow action")
 )
 
 func CreateOrder(id, consumerID, restaurantID string, lineItems []LineItem, deliverAt time.Time, deliverTo Address) (*Order, error) {
@@ -66,4 +67,13 @@ func (o *Order) OrderTotal() int {
 	}
 
 	return total
+}
+
+func (o *Order) ApproveOrder(ticketID string) error {
+	if o.Status != ApprovalPending {
+		return ErrOrderInvalidStatus
+	}
+	o.TicketID = ticketID
+	o.Status = Approved
+	return nil
 }

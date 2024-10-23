@@ -7,6 +7,7 @@ var (
 	ErrAccountNameCannotBeBlank = errors.Wrap(errors.ErrBadRequest, "the account name cannot be blank")
 	ErrAccountAlreadyEnabled    = errors.Wrap(errors.ErrBadRequest, "the account is already enabled")
 	ErrAccountAlreadyDisabled   = errors.Wrap(errors.ErrBadRequest, "the account is already disabled")
+	ErrAccountDisabled          = errors.Wrap(errors.ErrFailedPrecondition, "account is disabled")
 )
 
 type Account struct {
@@ -43,5 +44,12 @@ func (a *Account) Disable() error {
 		return ErrAccountAlreadyDisabled
 	}
 	a.Enabled = false
+	return nil
+}
+
+func (a *Account) AuthorizeOrder(OrderID string, OrderTotal int) error {
+	if !a.Enabled {
+		return ErrAccountDisabled
+	}
 	return nil
 }

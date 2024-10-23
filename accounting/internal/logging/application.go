@@ -44,3 +44,9 @@ func (a Application) DisableAccount(ctx context.Context, disable application.Dis
 	defer func() { a.logger.Info().Err(err).Msg("<--accounting.DisableAccount") }()
 	return a.App.DisableAccount(ctx, disable)
 }
+
+func (a Application) AuthorizeOrderByAccount(ctx context.Context, authorize application.AuthorizeOrderByAccount) (err error) {
+	a.logger.Info().Msg("-->accounting.AuthorizeOrderByAccount")
+	defer func() { a.logger.Info().Err(err).Msg("<--accounting.AuthorizeOrderByAccount") }()
+	return a.App.AuthorizeOrderByAccount(ctx, authorize)
+}

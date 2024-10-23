@@ -10,7 +10,16 @@ service ConsumerService {
   rpc GetAddress(GetAddressRequest) returns (GetAddressResponse);
   rpc UpdateAddress(UpdateAddressRequest) returns (UpdateAddressResponse);
   rpc RemoveAddress(RemoveAddressRequest) returns (RemoveAddressResponse);
+  rpc ValidateOrderByConsumer(ValidateOrderByConsumerRequest) returns (ValidateOrderByConsumerResponse);
 }
+
+message ValidateOrderByConsumerRequest{
+  string ConsumerID = 1;
+  string OrderID = 2;
+  int64 OrderTotal = 3;
+}
+
+message ValidateOrderByConsumerResponse{}
 
 message RegisterConsumerRequest {
   string Name = 1;

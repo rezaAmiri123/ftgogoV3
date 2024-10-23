@@ -4,11 +4,30 @@ package accountingpb;
 option go_package = "github.com/rezaAmiri123/ftgogoV3/accountng/accountingpb";
 
 service AccountingService {
+    rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
     rpc GetAccount(GetAccountRequest) returns (GetAccountResponse);
     rpc DisableAccount(DisableAccountRequest) returns (DisableAccountResponse);
     rpc EnableAccount(EnableAccountRequest) returns (EnableAccountResponse);
+    rpc AuthorizeOrderByAccount(AuthorizeOrderByAccountRequest) returns (AuthorizeOrderByAccountResponse);
   }
   
+  message AuthorizeOrderByAccountRequest{
+    string AccountID = 1;
+    string OrderID = 2;
+    int64 OrderTotal = 3;
+  }
+  
+  message AuthorizeOrderByAccountResponse{}
+  
+  message CreateAccountRequest{
+    string ID  = 1;
+    string Name = 2;
+  }
+
+  message CreateAccountResponse{
+    string AccountID = 1;
+  }
+
   message GetAccountRequest {
     string AccountID = 1;
   }

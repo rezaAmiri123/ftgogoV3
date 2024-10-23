@@ -12,14 +12,20 @@ import (
 
 type Module struct{}
 
-func(m Module)Startup(ctx context.Context, mono monolith.Monolith)error{
+func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 	consumers := postgres.NewConsumerReopsitory("consumer.consumers", mono.DB())
+	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
+	if err != nil {
+		return err
+	}
+
+	accounts := grpc.NewAccountRepository(conn)
 
 	var app application.App
-	app = application.New(consumers)
-	app = logging.LogApplicationAccess(app,mono.Logger())
+	app = application.New(consumers, accounts)
+	app = logging.LogApplicationAccess(app, mono.Logger())
 
-	if err := grpc.RegisterServer(app,mono.RPC());err!= nil{
+	if err := grpc.RegisterServer(app, mono.RPC()); err != nil {
 		return err
 	}
 

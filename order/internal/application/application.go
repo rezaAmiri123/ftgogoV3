@@ -7,6 +7,7 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/application/queries"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/domain"
 )
+
 type (
 	App interface {
 		Commands
@@ -33,10 +34,16 @@ type (
 
 var _ App = (*Application)(nil)
 
-func New(orders domain.OrderRepository, restaurants domain.RestaurantRepository) *Application {
+func New(
+	orders domain.OrderRepository,
+	restaurants domain.RestaurantRepository,
+	consumers domain.ConsumerRepository,
+	kitchens domain.KitchenRepository,
+	accounts domain.AccountRepository,
+) *Application {
 	return &Application{
 		appCommands: appCommands{
-			CreateOrderHandler: commands.NewCreateOrderHandler(orders,restaurants),
+			CreateOrderHandler: commands.NewCreateOrderHandler(orders, restaurants, consumers, kitchens, accounts),
 		},
 		appQueries: appQueries{
 			GetOrderHandler: queries.NewGetOrderHandler(orders),

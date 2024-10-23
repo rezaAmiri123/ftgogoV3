@@ -3,11 +3,11 @@ package order
 import (
 	"context"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/monolith"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/grpc"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/logging"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/postgres"
-	"github.com/rezaAmiri123/ftgogoV3/internal/monolith"
 )
 
 type Module struct{}
@@ -20,9 +20,12 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 	}
 
 	restaurants := grpc.NewRestaurantRepository(conn)
+	consumers := grpc.NewConsumerRepository(conn)
+	kitchens := grpc.NewKitchenRepository(conn)
+	accounts := grpc.NewAccountRepository(conn)
 
 	var app application.App
-	app = application.New(orders, restaurants)
+	app = application.New(orders, restaurants, consumers, kitchens, accounts)
 	app = logging.LogApplicationAccess(app, mono.Logger())
 
 	if err := grpc.RegisterServer(app, mono.RPC()); err != nil {

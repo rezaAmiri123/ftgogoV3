@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ConsumerService_RegisterConsumer_FullMethodName = "/consumerpb.ConsumerService/RegisterConsumer"
-	ConsumerService_GetConsumer_FullMethodName      = "/consumerpb.ConsumerService/GetConsumer"
-	ConsumerService_UpdateConsumer_FullMethodName   = "/consumerpb.ConsumerService/UpdateConsumer"
-	ConsumerService_GetAddress_FullMethodName       = "/consumerpb.ConsumerService/GetAddress"
-	ConsumerService_UpdateAddress_FullMethodName    = "/consumerpb.ConsumerService/UpdateAddress"
-	ConsumerService_RemoveAddress_FullMethodName    = "/consumerpb.ConsumerService/RemoveAddress"
+	ConsumerService_RegisterConsumer_FullMethodName        = "/consumerpb.ConsumerService/RegisterConsumer"
+	ConsumerService_GetConsumer_FullMethodName             = "/consumerpb.ConsumerService/GetConsumer"
+	ConsumerService_UpdateConsumer_FullMethodName          = "/consumerpb.ConsumerService/UpdateConsumer"
+	ConsumerService_GetAddress_FullMethodName              = "/consumerpb.ConsumerService/GetAddress"
+	ConsumerService_UpdateAddress_FullMethodName           = "/consumerpb.ConsumerService/UpdateAddress"
+	ConsumerService_RemoveAddress_FullMethodName           = "/consumerpb.ConsumerService/RemoveAddress"
+	ConsumerService_ValidateOrderByConsumer_FullMethodName = "/consumerpb.ConsumerService/ValidateOrderByConsumer"
 )
 
 // ConsumerServiceClient is the client API for ConsumerService service.
@@ -37,6 +38,7 @@ type ConsumerServiceClient interface {
 	GetAddress(ctx context.Context, in *GetAddressRequest, opts ...grpc.CallOption) (*GetAddressResponse, error)
 	UpdateAddress(ctx context.Context, in *UpdateAddressRequest, opts ...grpc.CallOption) (*UpdateAddressResponse, error)
 	RemoveAddress(ctx context.Context, in *RemoveAddressRequest, opts ...grpc.CallOption) (*RemoveAddressResponse, error)
+	ValidateOrderByConsumer(ctx context.Context, in *ValidateOrderByConsumerRequest, opts ...grpc.CallOption) (*ValidateOrderByConsumerResponse, error)
 }
 
 type consumerServiceClient struct {
@@ -101,6 +103,15 @@ func (c *consumerServiceClient) RemoveAddress(ctx context.Context, in *RemoveAdd
 	return out, nil
 }
 
+func (c *consumerServiceClient) ValidateOrderByConsumer(ctx context.Context, in *ValidateOrderByConsumerRequest, opts ...grpc.CallOption) (*ValidateOrderByConsumerResponse, error) {
+	out := new(ValidateOrderByConsumerResponse)
+	err := c.cc.Invoke(ctx, ConsumerService_ValidateOrderByConsumer_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConsumerServiceServer is the server API for ConsumerService service.
 // All implementations must embed UnimplementedConsumerServiceServer
 // for forward compatibility
@@ -111,6 +122,7 @@ type ConsumerServiceServer interface {
 	GetAddress(context.Context, *GetAddressRequest) (*GetAddressResponse, error)
 	UpdateAddress(context.Context, *UpdateAddressRequest) (*UpdateAddressResponse, error)
 	RemoveAddress(context.Context, *RemoveAddressRequest) (*RemoveAddressResponse, error)
+	ValidateOrderByConsumer(context.Context, *ValidateOrderByConsumerRequest) (*ValidateOrderByConsumerResponse, error)
 	mustEmbedUnimplementedConsumerServiceServer()
 }
 
@@ -135,6 +147,9 @@ func (UnimplementedConsumerServiceServer) UpdateAddress(context.Context, *Update
 }
 func (UnimplementedConsumerServiceServer) RemoveAddress(context.Context, *RemoveAddressRequest) (*RemoveAddressResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveAddress not implemented")
+}
+func (UnimplementedConsumerServiceServer) ValidateOrderByConsumer(context.Context, *ValidateOrderByConsumerRequest) (*ValidateOrderByConsumerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ValidateOrderByConsumer not implemented")
 }
 func (UnimplementedConsumerServiceServer) mustEmbedUnimplementedConsumerServiceServer() {}
 
@@ -257,6 +272,24 @@ func _ConsumerService_RemoveAddress_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConsumerService_ValidateOrderByConsumer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ValidateOrderByConsumerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsumerServiceServer).ValidateOrderByConsumer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConsumerService_ValidateOrderByConsumer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsumerServiceServer).ValidateOrderByConsumer(ctx, req.(*ValidateOrderByConsumerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConsumerService_ServiceDesc is the grpc.ServiceDesc for ConsumerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -287,6 +320,10 @@ var ConsumerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveAddress",
 			Handler:    _ConsumerService_RemoveAddress_Handler,
+		},
+		{
+			MethodName: "ValidateOrderByConsumer",
+			Handler:    _ConsumerService_ValidateOrderByConsumer_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

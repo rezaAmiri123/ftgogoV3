@@ -19,18 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AccountingService_GetAccount_FullMethodName     = "/accountingpb.AccountingService/GetAccount"
-	AccountingService_DisableAccount_FullMethodName = "/accountingpb.AccountingService/DisableAccount"
-	AccountingService_EnableAccount_FullMethodName  = "/accountingpb.AccountingService/EnableAccount"
+	AccountingService_CreateAccount_FullMethodName           = "/accountingpb.AccountingService/CreateAccount"
+	AccountingService_GetAccount_FullMethodName              = "/accountingpb.AccountingService/GetAccount"
+	AccountingService_DisableAccount_FullMethodName          = "/accountingpb.AccountingService/DisableAccount"
+	AccountingService_EnableAccount_FullMethodName           = "/accountingpb.AccountingService/EnableAccount"
+	AccountingService_AuthorizeOrderByAccount_FullMethodName = "/accountingpb.AccountingService/AuthorizeOrderByAccount"
 )
 
 // AccountingServiceClient is the client API for AccountingService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AccountingServiceClient interface {
+	CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*CreateAccountResponse, error)
 	GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*GetAccountResponse, error)
 	DisableAccount(ctx context.Context, in *DisableAccountRequest, opts ...grpc.CallOption) (*DisableAccountResponse, error)
 	EnableAccount(ctx context.Context, in *EnableAccountRequest, opts ...grpc.CallOption) (*EnableAccountResponse, error)
+	AuthorizeOrderByAccount(ctx context.Context, in *AuthorizeOrderByAccountRequest, opts ...grpc.CallOption) (*AuthorizeOrderByAccountResponse, error)
 }
 
 type accountingServiceClient struct {
@@ -39,6 +43,15 @@ type accountingServiceClient struct {
 
 func NewAccountingServiceClient(cc grpc.ClientConnInterface) AccountingServiceClient {
 	return &accountingServiceClient{cc}
+}
+
+func (c *accountingServiceClient) CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*CreateAccountResponse, error) {
+	out := new(CreateAccountResponse)
+	err := c.cc.Invoke(ctx, AccountingService_CreateAccount_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *accountingServiceClient) GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*GetAccountResponse, error) {
@@ -68,13 +81,24 @@ func (c *accountingServiceClient) EnableAccount(ctx context.Context, in *EnableA
 	return out, nil
 }
 
+func (c *accountingServiceClient) AuthorizeOrderByAccount(ctx context.Context, in *AuthorizeOrderByAccountRequest, opts ...grpc.CallOption) (*AuthorizeOrderByAccountResponse, error) {
+	out := new(AuthorizeOrderByAccountResponse)
+	err := c.cc.Invoke(ctx, AccountingService_AuthorizeOrderByAccount_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AccountingServiceServer is the server API for AccountingService service.
 // All implementations must embed UnimplementedAccountingServiceServer
 // for forward compatibility
 type AccountingServiceServer interface {
+	CreateAccount(context.Context, *CreateAccountRequest) (*CreateAccountResponse, error)
 	GetAccount(context.Context, *GetAccountRequest) (*GetAccountResponse, error)
 	DisableAccount(context.Context, *DisableAccountRequest) (*DisableAccountResponse, error)
 	EnableAccount(context.Context, *EnableAccountRequest) (*EnableAccountResponse, error)
+	AuthorizeOrderByAccount(context.Context, *AuthorizeOrderByAccountRequest) (*AuthorizeOrderByAccountResponse, error)
 	mustEmbedUnimplementedAccountingServiceServer()
 }
 
@@ -82,6 +106,9 @@ type AccountingServiceServer interface {
 type UnimplementedAccountingServiceServer struct {
 }
 
+func (UnimplementedAccountingServiceServer) CreateAccount(context.Context, *CreateAccountRequest) (*CreateAccountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAccount not implemented")
+}
 func (UnimplementedAccountingServiceServer) GetAccount(context.Context, *GetAccountRequest) (*GetAccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAccount not implemented")
 }
@@ -90,6 +117,9 @@ func (UnimplementedAccountingServiceServer) DisableAccount(context.Context, *Dis
 }
 func (UnimplementedAccountingServiceServer) EnableAccount(context.Context, *EnableAccountRequest) (*EnableAccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EnableAccount not implemented")
+}
+func (UnimplementedAccountingServiceServer) AuthorizeOrderByAccount(context.Context, *AuthorizeOrderByAccountRequest) (*AuthorizeOrderByAccountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AuthorizeOrderByAccount not implemented")
 }
 func (UnimplementedAccountingServiceServer) mustEmbedUnimplementedAccountingServiceServer() {}
 
@@ -102,6 +132,24 @@ type UnsafeAccountingServiceServer interface {
 
 func RegisterAccountingServiceServer(s grpc.ServiceRegistrar, srv AccountingServiceServer) {
 	s.RegisterService(&AccountingService_ServiceDesc, srv)
+}
+
+func _AccountingService_CreateAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountingServiceServer).CreateAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountingService_CreateAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountingServiceServer).CreateAccount(ctx, req.(*CreateAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _AccountingService_GetAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -158,6 +206,24 @@ func _AccountingService_EnableAccount_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AccountingService_AuthorizeOrderByAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthorizeOrderByAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountingServiceServer).AuthorizeOrderByAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountingService_AuthorizeOrderByAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountingServiceServer).AuthorizeOrderByAccount(ctx, req.(*AuthorizeOrderByAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AccountingService_ServiceDesc is the grpc.ServiceDesc for AccountingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -165,6 +231,10 @@ var AccountingService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "accountingpb.AccountingService",
 	HandlerType: (*AccountingServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateAccount",
+			Handler:    _AccountingService_CreateAccount_Handler,
+		},
 		{
 			MethodName: "GetAccount",
 			Handler:    _AccountingService_GetAccount_Handler,
@@ -176,6 +246,10 @@ var AccountingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "EnableAccount",
 			Handler:    _AccountingService_EnableAccount_Handler,
+		},
+		{
+			MethodName: "AuthorizeOrderByAccount",
+			Handler:    _AccountingService_AuthorizeOrderByAccount_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -85,6 +85,18 @@ func (s server) RemoveAddress(ctx context.Context, request *consumerpb.RemoveAdd
 	return &consumerpb.RemoveAddressResponse{},nil
 }
 
+func (s server) ValidateOrderByConsumer(ctx context.Context, request *consumerpb.ValidateOrderByConsumerRequest) (*consumerpb.ValidateOrderByConsumerResponse, error){
+	err := s.app.ValidateOrderByConsumer(ctx,application.ValidateOrderByConsumer{
+		ConsumerID: request.GetConsumerID(),
+		OrderID: request.GetOrderID(),
+		OrderTotal: int(request.GetOrderTotal()),
+	})
+	if err != nil{
+		return nil,err
+	}
+	return &consumerpb.ValidateOrderByConsumerResponse{},nil
+}
+
 func (s server) toAddressProto(address domain.Address) *consumerpb.Address {
 	return &consumerpb.Address{
 		Street1: address.Street1,

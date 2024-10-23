@@ -15,6 +15,7 @@ type (
 	}
 	Commands interface {
 		CreateTicket(ctx context.Context, cmd commands.CreateTicket) error
+		ConfirmCreateTicket(ctx context.Context, cmd commands.ConfirmCreateTicket) error
 	}
 	Queries interface {
 		GetTicket(ctx context.Context, query queries.GetTicket) (*domain.Ticket, error)
@@ -26,6 +27,7 @@ type (
 	}
 	appCommands struct {
 		commands.CreateTicketHandler
+		commands.ConfirmCreateTicketHandler
 	}
 	appQueries struct {
 		queries.GetTicketHandler
@@ -38,6 +40,7 @@ func New(tickets domain.TicketRepository) *Application {
 	return &Application{
 		appCommands: appCommands{
 			CreateTicketHandler: commands.NewCreateTicketHandler(tickets),
+			ConfirmCreateTicketHandler: commands.NewConfirmCreateTicketHandler(tickets),
 		},
 		appQueries: appQueries{
 			GetTicketHandler: queries.NewGetTicketHandler(tickets),

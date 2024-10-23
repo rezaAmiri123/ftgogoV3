@@ -10,11 +10,18 @@ service KitchenService {
   rpc GetTicket(GetTicketRequest) returns (GetTicketResponse);
   rpc GetRestaurant(GetRestaurantRequest) returns (GetRestaurantResponse);
   rpc AcceptTicket(AcceptTicketRequest) returns (AcceptTicketResponse);
+  rpc ConfirmCreateTicket(ConfirmCreateTicketRequest) returns (ConfirmCreateTicketResponse);
+}
+message ConfirmCreateTicketRequest {
+  string TicketID = 1;
 }
 
+message ConfirmCreateTicketResponse{}
+
 message CreateTicketRequest{
-  string RestaurantID = 1;
-  repeated LineItem LineItems = 2;
+  string ID = 1;
+  string RestaurantID = 2;
+  repeated LineItem LineItems =3;
 }
 
 message CreateTicketResponse{

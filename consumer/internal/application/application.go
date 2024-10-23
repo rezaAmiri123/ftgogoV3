@@ -27,6 +27,11 @@ type (
 		ConsumerID string
 		AddressID  string
 	}
+	ValidateOrderByConsumer struct {
+		ConsumerID string
+		OrderID    string
+		OrderTotal int
+	}
 
 	App interface {
 		RegisterConsumer(ctx context.Context, register RegisterConsumer) error
@@ -34,23 +39,34 @@ type (
 		UpdateConsumerAddress(ctx context.Context, update UpdateConsumerAddress) error
 		RemoveConsumerAddress(ctx context.Context, remove RemoveConsumerAddress) error
 		GetConsumerAddress(ctx context.Context, get GetConsumerAddress) (domain.Address, error)
+		ValidateOrderByConsumer(ctx context.Context, validate ValidateOrderByConsumer) error
 	}
 
 	Application struct {
 		consumers domain.ConsumerRepository
+		accounts  domain.AccountRepository
 	}
 )
 
 var _ App = (*Application)(nil)
 
-func New(consumers domain.ConsumerRepository) *Application {
+func New(consumers domain.ConsumerRepository, accounts domain.AccountRepository) *Application {
 	return &Application{
 		consumers: consumers,
+		accounts:  accounts,
 	}
 }
 
 func (a Application) RegisterConsumer(ctx context.Context, register RegisterConsumer) error {
 	consumer, err := domain.RegisterConsumer(register.ID, register.Name)
+	if err != nil {
+		return err
+	}
+
+	err = a.accounts.CreateAccount(ctx, domain.CreateAccount{
+		ID:   consumer.ID,
+		Name: consumer.Name,
+	})
 	if err != nil {
 		return err
 	}
@@ -98,4 +114,13 @@ func (a Application) GetConsumerAddress(ctx context.Context, get GetConsumerAddr
 		return domain.Address{}, err
 	}
 	return address, nil
+}
+
+func (a Application) ValidateOrderByConsumer(ctx context.Context, validate ValidateOrderByConsumer) error {
+	consumer, err := a.consumers.Find(ctx, validate.ConsumerID)
+	if err != nil {
+		return err
+	}
+
+	return consumer.ValidateOrderByConsumer(validate.OrderTotal)
 }

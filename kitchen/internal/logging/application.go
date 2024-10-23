@@ -35,3 +35,9 @@ func (a Application) GetTicket(ctx context.Context, query queries.GetTicket) (_ 
 	defer func() { a.logger.Info().Err(err).Msg("<--kitchen.GetTicket") }()
 	return a.App.GetTicket(ctx, query)
 }
+
+func (a Application) ConfirmCreateTicket(ctx context.Context, cmd commands.ConfirmCreateTicket) (err error) {
+	a.logger.Info().Msg("-->kitchen.ConfirmCreateTicket")
+	defer func() { a.logger.Info().Err(err).Msg("<--kitchen.ConfirmCreateTicket") }()
+	return a.App.ConfirmCreateTicket(ctx, cmd)
+}

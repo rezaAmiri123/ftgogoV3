@@ -51,3 +51,9 @@ func (a Application)GetConsumerAddress(ctx context.Context, get application.GetC
 	defer func() { a.logger.Info().Err(err).Msg("<--consumer.GetConsumerAddress") }()
 	return a.App.GetConsumerAddress(ctx, get)
 }
+
+func (a Application)ValidateOrderByConsumer(ctx context.Context, validate application.ValidateOrderByConsumer) (err error){
+	a.logger.Info().Msg("-->consumer.ValidateOrderByConsumer")
+	defer func() { a.logger.Info().Err(err).Msg("<--consumer.ValidateOrderByConsumer") }()
+	return a.App.ValidateOrderByConsumer(ctx, validate)
+}

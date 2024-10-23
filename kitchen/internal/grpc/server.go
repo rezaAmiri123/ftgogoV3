@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/application/commands"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/application/queries"
@@ -25,17 +24,15 @@ func RegisterServer(app application.App, register grpc.ServiceRegistrar) error {
 }
 
 func (s server) CreateTicket(ctx context.Context, request *kitchenpb.CreateTicketRequest) (*kitchenpb.CreateTicketResponse, error) {
-	id := uuid.New().String()
-	
 	err := s.app.CreateTicket(ctx, commands.CreateTicket{
-		ID:           id,
+		ID:           request.GetID(),
 		RestaurantID: request.GetRestaurantID(),
 		LineItems:    s.toLineItemsDomain(request.GetLineItems()),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &kitchenpb.CreateTicketResponse{TicketID: id}, nil
+	return &kitchenpb.CreateTicketResponse{TicketID: request.GetID()}, nil
 }
 
 func (s server) GetTicket(ctx context.Context, request *kitchenpb.GetTicketRequest) (*kitchenpb.GetTicketResponse, error) {
@@ -50,11 +47,15 @@ func (s server) GetTicket(ctx context.Context, request *kitchenpb.GetTicketReque
 	}, nil
 }
 
-// func (s server) GetRestaurant(ctx context.Context, request *kitchenpb.GetRestaurantRequest) (*kitchenpb.GetRestaurantResponse, error) {
-// }
-
-// func (s server) AcceptTicket(ctx context.Context, request *kitchenpb.AcceptTicketRequest) (*kitchenpb.AcceptTicketResponse, error) {
-// }
+func (s server) ConfirmCreateTicket(ctx context.Context, request *kitchenpb.ConfirmCreateTicketRequest) (*kitchenpb.ConfirmCreateTicketResponse, error) {
+	err := s.app.ConfirmCreateTicket(ctx, commands.ConfirmCreateTicket{
+		ID: request.GetTicketID(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &kitchenpb.ConfirmCreateTicketResponse{}, nil
+}
 
 func (s server) toLineItemsDomain(lineItems []*kitchenpb.LineItem) []domain.LineItem {
 	response := make([]domain.LineItem, 0, len(lineItems))

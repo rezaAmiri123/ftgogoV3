@@ -49,7 +49,9 @@ func (r ConsumerReopsitory) Find(ctx context.Context, consumerID string) (*domai
 		&consumer.Name,
 		&addresses,
 	)
-
+	if err != nil {
+		return nil, err
+	}
 	err = json.Unmarshal(addresses, &consumer.Addresses)
 	if err != nil {
 		return nil, errors.ErrInternalServerError.Err(err)

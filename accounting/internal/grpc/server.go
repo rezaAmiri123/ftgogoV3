@@ -46,3 +46,23 @@ func (s server) EnableAccount(ctx context.Context, request *accountingpb.EnableA
 	})
 	return &accountingpb.EnableAccountResponse{}, err
 }
+
+func (s server) CreateAccount(ctx context.Context, request *accountingpb.CreateAccountRequest) (*accountingpb.CreateAccountResponse, error) {
+	err := s.app.RegisterAccount(ctx, application.RegisterAccount{
+		ID:   request.GetID(),
+		Name: request.GetName(),
+	})
+	return &accountingpb.CreateAccountResponse{AccountID: request.GetID()}, err
+}
+
+func (s server) AuthorizeOrderByAccount(ctx context.Context, request *accountingpb.AuthorizeOrderByAccountRequest) (*accountingpb.AuthorizeOrderByAccountResponse, error) {
+	err := s.app.AuthorizeOrderByAccount(ctx, application.AuthorizeOrderByAccount{
+		ID:         request.GetAccountID(),
+		OrderID:    request.GetOrderID(),
+		OrderTotal: int(request.GetOrderTotal()),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &accountingpb.AuthorizeOrderByAccountResponse{}, nil
+}

@@ -50,3 +50,9 @@ func (c *Consumer) GetAddress(id string) (Address, error) {
 
 	return address, nil
 }
+
+// ValidateOrderByConsumer domain method
+func (c *Consumer) ValidateOrderByConsumer(orderTotal int) error {
+	// ftgo: implement some business logic
+	return nil
+}

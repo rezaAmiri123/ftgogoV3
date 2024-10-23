@@ -10,6 +10,7 @@ var (
 	ErrTicketIDCannotBeBlank     = errors.Wrap(errors.ErrBadRequest, "the ticket id cannot be blank")
 	ErrRestaurantIDCannotBeBlank = errors.Wrap(errors.ErrBadRequest, "the restaurant id cannot be blank")
 	ErrLineItemsCannotBeEmpty    = errors.Wrap(errors.ErrBadRequest, "the line items cannot be empty")
+	ErrTicketInvalidState        = errors.Wrap(errors.ErrFailedPrecondition, "ticket status does not allow action")
 )
 
 type Ticket struct {
@@ -41,4 +42,12 @@ func CreateTicket(id, restaurantID string, lineItems []LineItem) (*Ticket, error
 		LineItems:    lineItems,
 		Status:       CreatePending,
 	}, nil
+}
+
+func (t *Ticket) ConfirmCreate() error {
+	if t.Status != CreatePending {
+		return ErrTicketInvalidState
+	}
+	t.Status = AwaitingAcceptance
+	return nil
 }
