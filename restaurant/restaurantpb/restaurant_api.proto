@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package restaurantpb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/restaurant/restaurantpb";
+
+service RestaurantService {
+  rpc CreateRestaurant(CreateRestaurantRequest) returns (CreateRestaurantResponse);
+  rpc GetRestaurant(GetRestaurantRequest) returns (GetRestaurantResponse);
+  rpc UpdateMenuItem(UpdateMenuItemRequest) returns (UpdateMenuItemResponse);
+}
+
+message MenuItem {
+  string ID = 1;
+  string Name = 2;
+  int64 Price = 3;
+}
+
+message CreateRestaurantRequest {
+  string Name = 1;
+  Address Address = 2;
+}
+
+message CreateRestaurantResponse {
+  string RestaurantID = 1;
+}
+
+message GetRestaurantRequest {
+  string RestaurantID = 1;
+}
+
+message GetRestaurantResponse {
+  string RestaurantID = 1;
+  string Name = 2;
+  Address Address = 3;
+  repeated MenuItem MenuItems = 4;
+}
+
+message UpdateMenuItemRequest{
+  string RestaurantID = 1;
+  repeated MenuItem MenuItem = 2;
+}
+
+message UpdateMenuItemResponse{}
+
+message Address {
+  string Street1 = 1;
+  string Street2 = 2;
+  string City = 3;
+  string State = 4;
+  string Zip = 5;
+}

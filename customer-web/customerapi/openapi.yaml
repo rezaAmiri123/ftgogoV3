@@ -1,0 +1,61 @@
+openapi: "3.0.0"
+info:
+  version: "1.0.0"
+  title: Customer Web API
+  description: The Customer Web API is part of the FTGOGO demonstration application
+  contact:
+    name: FTGOGO Issues
+    url: https://github.com/rezaAmiri123/ftgogoV3/issues
+servers:
+  - url: http://{host}:{port}/api/v1
+    variables:
+      host:
+        default: localhost
+      port:
+        default: "8000"
+paths:
+  /register:
+    post:
+      operationId: registerConsumer
+      security:
+        - {}
+      requestBody:
+        description: register consumer request
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          $ref: '#/components/responses/ConsumerIDResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+components:  
+  responses:
+    EmptyResponse:
+      description: No Content
+    ErrorResponse:
+      description: Unexpected Error
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+    ConsumerIDResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [id]
+            properties:
+              id:
+                type: string

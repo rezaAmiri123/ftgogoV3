@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package consumerpb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/consumer/consumerpb";
+
+service ConsumerService {
+  rpc RegisterConsumer(RegisterConsumerRequest) returns (RegisterConsumerResponse);
+  rpc GetConsumer(GetConsumerRequest) returns (GetConsumerResponse);
+  rpc UpdateConsumer(UpdateConsumerRequest) returns (UpdateConsumerResponse);
+  rpc GetAddress(GetAddressRequest) returns (GetAddressResponse);
+  rpc UpdateAddress(UpdateAddressRequest) returns (UpdateAddressResponse);
+  rpc RemoveAddress(RemoveAddressRequest) returns (RemoveAddressResponse);
+  rpc ValidateOrderByConsumer(ValidateOrderByConsumerRequest) returns (ValidateOrderByConsumerResponse);
+}
+
+message ValidateOrderByConsumerRequest{
+  string ConsumerID = 1;
+  string OrderID = 2;
+  int64 OrderTotal = 3;
+}
+
+message ValidateOrderByConsumerResponse{}
+
+message RegisterConsumerRequest {
+  string Name = 1;
+}
+
+message RegisterConsumerResponse {
+  string ConsumerID = 1;
+}
+
+message GetConsumerRequest {
+  string ConsumerID = 1;
+}
+
+message GetConsumerResponse {
+  string ConsumerID = 1;
+  string Name = 2;
+}
+
+message UpdateConsumerRequest {
+  string ConsumerID = 1;
+  string Name = 2;
+}
+
+message UpdateConsumerResponse {}
+
+message GetAddressRequest {
+  string ConsumerID = 1;
+  string AddressID = 2;
+}
+
+message GetAddressResponse {
+  string ConsumerID = 1;
+  string AddressID = 2;
+  Address Address = 3;
+}
+
+message UpdateAddressRequest {
+  string ConsumerID = 1;
+  string AddressID = 2;
+  Address Address = 3;
+}
+
+message UpdateAddressResponse {}
+
+message RemoveAddressRequest {
+  string ConsumerID = 1;
+  string AddressID = 2;
+}
+
+message RemoveAddressResponse {}
+
+message Address {
+  string Street1 = 1;
+  string Street2 = 2;
+  string City = 3;
+  string State = 4;
+  string Zip = 5;
+}
