@@ -3,8 +3,10 @@ package logging
 import (
 	"context"
 
+	"github.com/rezaAmiri123/ftgogoV3/customer-web/internal/domain"
 	"github.com/rezaAmiri123/ftgogoV3/customer-web/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/customer-web/internal/application/commands"
+	"github.com/rezaAmiri123/ftgogoV3/customer-web/internal/application/queries"
 	"github.com/rs/zerolog"
 )
 
@@ -23,7 +25,14 @@ func LogApplicationAccess(application application.App, logger zerolog.Logger) Ap
 }
 
 func (a Application) RegisterConsumer(ctx context.Context, cmd commands.RegisterConsumer) (_ string, err error) {
-	a.logger.Info().Msg("-->consumer.RegisterConsumer")
-	defer func() { a.logger.Info().Err(err).Msg("<--consumer.RegisterConsumer") }()
+	a.logger.Info().Msg("-->customer-web.RegisterConsumer")
+	defer func() { a.logger.Info().Err(err).Msg("<--customer-web.RegisterConsumer") }()
 	return a.App.RegisterConsumer(ctx, cmd)
+}
+
+// (ctx context.Context,  ) (*domain.Consumer, error)
+func (a Application) GetConsumer(ctx context.Context,query queries.GetConsumer) (_ *domain.Consumer, err error) {
+	a.logger.Info().Msg("-->customer-web.GetConsumer")
+	defer func() { a.logger.Info().Err(err).Msg("<--customer-web.GetConsumer") }()
+	return a.App.GetConsumer(ctx, query)
 }

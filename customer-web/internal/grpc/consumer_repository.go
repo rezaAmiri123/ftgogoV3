@@ -27,3 +27,16 @@ func (r ConsumerRepository) Register(ctx context.Context, register domain.Regist
 	}
 	return resp.GetConsumerID(), nil
 }
+
+func (r ConsumerRepository) Find(ctx context.Context, find domain.FindConsumer) (*domain.Consumer, error) {
+	consumer, err := r.client.GetConsumer(ctx, &consumerpb.GetConsumerRequest{
+		ConsumerID: find.ConsumerID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &domain.Consumer{
+		ConsumerID: consumer.GetConsumerID(),
+		Name:       consumer.GetName(),
+	}, nil
+}

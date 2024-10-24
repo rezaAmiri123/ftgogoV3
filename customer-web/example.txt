@@ -1,0 +1,10 @@
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"name":"name1"}' \
+  http://localhost:8000/register
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"consumer_id":"97406930-6493-4769-a7df-e17b8df14a58"}' \
+  http://localhost:8000/signin
+

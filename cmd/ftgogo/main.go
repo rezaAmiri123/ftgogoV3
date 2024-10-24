@@ -3,9 +3,12 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rezaAmiri123/ftgogoV3/accounting"
 	"github.com/rezaAmiri123/ftgogoV3/consumer"
@@ -17,6 +20,7 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/internal/rpc"
 	"github.com/rezaAmiri123/ftgogoV3/internal/waiter"
 	"github.com/rezaAmiri123/ftgogoV3/internal/web"
+	"github.com/rezaAmiri123/ftgogoV3/internal/web/swagger"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen"
 	"github.com/rezaAmiri123/ftgogoV3/order"
 	"github.com/rezaAmiri123/ftgogoV3/restaurant"
@@ -75,7 +79,7 @@ func run() (err error) {
 	}
 
 	// Mount general web resources
-	// m.mux.Mount("/", http.FileServer(http.FS(web.WebUI)))
+	m.mux.Mount("/", http.FileServer(http.FS(swagger.WebUI)))
 
 	fmt.Println("started ftgogo application")
 	defer fmt.Println("stopped ftgogo application")
@@ -96,5 +100,15 @@ func initRpc(_ rpc.RpcConfig) *grpc.Server {
 }
 
 func initMux(_ web.WebConfig) *chi.Mux {
-	return chi.NewMux()
+	mux := chi.NewMux()
+		// cors
+		mux.Use(cors.New(cors.Options{
+			AllowedOrigins:   cfg.Cors.Origins,
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+			ExposedHeaders:   []string{"Link"},
+			AllowCredentials: cfg.Cors.AllowCredentials,
+			MaxAge:           cfg.Cors.MaxAge,
+		}).Handler)
+	
 }
