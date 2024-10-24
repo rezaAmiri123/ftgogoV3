@@ -18,7 +18,7 @@ paths:
     post:
       operationId: signInConsumer
       security:
-        - {}
+        - { }
       requestBody:
         description: sign in consumer request
         required: true
@@ -39,7 +39,7 @@ paths:
     post:
       operationId: registerConsumer
       security:
-        - {}
+        - { }
       requestBody:
         description: register consumer request
         required: true
@@ -68,7 +68,16 @@ paths:
           $ref: '#/components/responses/UnauthorizedResponse'
         default:
           $ref: '#/components/responses/ErrorResponse'
+security:
+  - { }
+  - bearerAuth: [ ]
+
 components:  
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   responses:
     EmptyResponse:
       description: No Content
