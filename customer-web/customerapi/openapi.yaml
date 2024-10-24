@@ -14,11 +14,32 @@ servers:
       port:
         default: "8000"
 paths:
+  /signin:
+    post:
+      operationId: signInConsumer
+      security:
+        - { }
+      requestBody:
+        description: sign in consumer request
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [consumer_id]
+              properties:
+                consumer_id:
+                  type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/SignInResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'             
   /register:
     post:
       operationId: registerConsumer
       security:
-        - {}
+        - { }
       requestBody:
         description: register consumer request
         required: true
@@ -35,7 +56,28 @@ paths:
           $ref: '#/components/responses/ConsumerIDResponse'
         default:
           $ref: '#/components/responses/ErrorResponse'
+  /consumer:
+    get:
+      operationId: getConsumer
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          $ref: '#/components/responses/ConsumerResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+security:
+  - { }
+  - bearerAuth: [ ]
+
 components:  
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   responses:
     EmptyResponse:
       description: No Content
@@ -49,6 +91,18 @@ components:
             properties:
               message:
                 type: string
+    UnauthorizedResponse:
+      description: Access token is missing
+    SignInResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [token]
+            properties:
+              token:
+                type: string
     ConsumerIDResponse:
       description: OK
       content:
@@ -58,4 +112,16 @@ components:
             required: [id]
             properties:
               id:
+                type: string
+    ConsumerResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ consumer_id, name ]
+            properties:
+              consumer_id:
+                type: string
+              name:
                 type: string

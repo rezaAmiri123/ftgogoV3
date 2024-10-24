@@ -20,9 +20,19 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+const (
+	BearerAuthScopes = "bearerAuth.Scopes"
+)
+
 // ConsumerIDResponse defines model for ConsumerIDResponse.
 type ConsumerIDResponse struct {
 	Id string `json:"id"`
+}
+
+// ConsumerResponse defines model for ConsumerResponse.
+type ConsumerResponse struct {
+	ConsumerId string `json:"consumer_id"`
+	Name       string `json:"name"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -30,13 +40,26 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// SignInResponse defines model for SignInResponse.
+type SignInResponse struct {
+	Token string `json:"token"`
+}
+
 // RegisterConsumerJSONBody defines parameters for RegisterConsumer.
 type RegisterConsumerJSONBody struct {
 	Name string `json:"name"`
 }
 
+// SignInConsumerJSONBody defines parameters for SignInConsumer.
+type SignInConsumerJSONBody struct {
+	ConsumerId string `json:"consumer_id"`
+}
+
 // RegisterConsumerJSONRequestBody defines body for RegisterConsumer for application/json ContentType.
 type RegisterConsumerJSONRequestBody RegisterConsumerJSONBody
+
+// SignInConsumerJSONRequestBody defines body for SignInConsumer for application/json ContentType.
+type SignInConsumerJSONRequestBody SignInConsumerJSONBody
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -111,10 +134,30 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// GetConsumer request
+	GetConsumer(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RegisterConsumerWithBody request with any body
 	RegisterConsumerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	RegisterConsumer(ctx context.Context, body RegisterConsumerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SignInConsumerWithBody request with any body
+	SignInConsumerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SignInConsumer(ctx context.Context, body SignInConsumerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) GetConsumer(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetConsumerRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) RegisterConsumerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -141,6 +184,57 @@ func (c *Client) RegisterConsumer(ctx context.Context, body RegisterConsumerJSON
 	return c.Client.Do(req)
 }
 
+func (c *Client) SignInConsumerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSignInConsumerRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SignInConsumer(ctx context.Context, body SignInConsumerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSignInConsumerRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// NewGetConsumerRequest generates requests for GetConsumer
+func NewGetConsumerRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/consumer")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewRegisterConsumerRequest calls the generic RegisterConsumer builder with application/json body
 func NewRegisterConsumerRequest(server string, body RegisterConsumerJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -162,6 +256,46 @@ func NewRegisterConsumerRequestWithBody(server string, contentType string, body 
 	}
 
 	operationPath := fmt.Sprintf("/register")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSignInConsumerRequest calls the generic SignInConsumer builder with application/json body
+func NewSignInConsumerRequest(server string, body SignInConsumerJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSignInConsumerRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSignInConsumerRequestWithBody generates requests for SignInConsumer with any type of body
+func NewSignInConsumerRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/signin")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -224,10 +358,41 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// GetConsumerWithResponse request
+	GetConsumerWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConsumerResponse, error)
+
 	// RegisterConsumerWithBodyWithResponse request with any body
 	RegisterConsumerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterConsumerResponse, error)
 
 	RegisterConsumerWithResponse(ctx context.Context, body RegisterConsumerJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterConsumerResponse, error)
+
+	// SignInConsumerWithBodyWithResponse request with any body
+	SignInConsumerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SignInConsumerResponse, error)
+
+	SignInConsumerWithResponse(ctx context.Context, body SignInConsumerJSONRequestBody, reqEditors ...RequestEditorFn) (*SignInConsumerResponse, error)
+}
+
+type GetConsumerResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ConsumerResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetConsumerResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetConsumerResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type RegisterConsumerResponse struct {
@@ -253,6 +418,38 @@ func (r RegisterConsumerResponse) StatusCode() int {
 	return 0
 }
 
+type SignInConsumerResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SignInResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SignInConsumerResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SignInConsumerResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// GetConsumerWithResponse request returning *GetConsumerResponse
+func (c *ClientWithResponses) GetConsumerWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConsumerResponse, error) {
+	rsp, err := c.GetConsumer(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetConsumerResponse(rsp)
+}
+
 // RegisterConsumerWithBodyWithResponse request with arbitrary body returning *RegisterConsumerResponse
 func (c *ClientWithResponses) RegisterConsumerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterConsumerResponse, error) {
 	rsp, err := c.RegisterConsumerWithBody(ctx, contentType, body, reqEditors...)
@@ -268,6 +465,56 @@ func (c *ClientWithResponses) RegisterConsumerWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseRegisterConsumerResponse(rsp)
+}
+
+// SignInConsumerWithBodyWithResponse request with arbitrary body returning *SignInConsumerResponse
+func (c *ClientWithResponses) SignInConsumerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SignInConsumerResponse, error) {
+	rsp, err := c.SignInConsumerWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSignInConsumerResponse(rsp)
+}
+
+func (c *ClientWithResponses) SignInConsumerWithResponse(ctx context.Context, body SignInConsumerJSONRequestBody, reqEditors ...RequestEditorFn) (*SignInConsumerResponse, error) {
+	rsp, err := c.SignInConsumer(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSignInConsumerResponse(rsp)
+}
+
+// ParseGetConsumerResponse parses an HTTP response from a GetConsumerWithResponse call
+func ParseGetConsumerResponse(rsp *http.Response) (*GetConsumerResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetConsumerResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ConsumerResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseRegisterConsumerResponse parses an HTTP response from a RegisterConsumerWithResponse call
@@ -303,19 +550,68 @@ func ParseRegisterConsumerResponse(rsp *http.Response) (*RegisterConsumerRespons
 	return response, nil
 }
 
+// ParseSignInConsumerResponse parses an HTTP response from a SignInConsumerWithResponse call
+func ParseSignInConsumerResponse(rsp *http.Response) (*SignInConsumerResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SignInConsumerResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SignInResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (GET /consumer)
+	GetConsumer(w http.ResponseWriter, r *http.Request)
+
 	// (POST /register)
 	RegisterConsumer(w http.ResponseWriter, r *http.Request)
+
+	// (POST /signin)
+	SignInConsumer(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
 
+// (GET /consumer)
+func (_ Unimplemented) GetConsumer(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (POST /register)
 func (_ Unimplemented) RegisterConsumer(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /signin)
+func (_ Unimplemented) SignInConsumer(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -328,12 +624,44 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// GetConsumer operation middleware
+func (siw *ServerInterfaceWrapper) GetConsumer(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetConsumer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // RegisterConsumer operation middleware
 func (siw *ServerInterfaceWrapper) RegisterConsumer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RegisterConsumer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// SignInConsumer operation middleware
+func (siw *ServerInterfaceWrapper) SignInConsumer(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SignInConsumer(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -457,7 +785,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/consumer", wrapper.GetConsumer)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/register", wrapper.RegisterConsumer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/signin", wrapper.SignInConsumer)
 	})
 
 	return r
@@ -466,15 +800,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/6yTwW7UMBCGX8UaOEZ1tr0g30qBasWhqCpwqHrwOrOJq8Q2M5OKssq7IzvZsgWkrQSX",
-	"xJn8nvk8v2cHLg4pBgzCYHZAyCkGxvJxEQOPA9L63fUSzlEXg2CQvLQp9d5Z8THoe44hx9h1ONi8ShQT",
-	"kvg5mW/yUx4TggEW8qGFaaqA8NvoCRswt1lzV+01cXOPTmDKogbZkU+5EBi4+ghTBe+JIv0HsAGZbYvH",
-	"6fbClyB+Dvg9oRNsVOGcNT5s457UukIa7JAzfbi5vLq8UmvmERkqGKkHA51IYqN166UbNycuDprwhz0f",
-	"PPnV6ZneShvb+OVM+3nfHxg3HaqLkSUOSOorbtT5p7XyrJIlUXGrpEO1lG5wiIGFStPUQQOhAvHSZ8rf",
-	"U0EFD0g811qd1Cd1RogJg00eDJyVUAXJSld6rQlbz4JUbIhcWpDNKJXWDRi4XhT7ywezCcjyNjaP/+Dz",
-	"3OljJhfVSxzen0S5BVQtmHCYUGjEUuFgrE7rVX69JtyCgVf61wTqJ53+y+wVhK0dezm+/flwZHpGN5KX",
-	"RzC3u+lumkOU7cuRgwtntN51kWUyuxRJJm2T1w+r7LUlbzf9fIpuce8JCfrobF/CUwV56/Pfb+q6zo28",
-	"m34GAAD//3RrpMt1BAAA",
+	"H4sIAAAAAAAC/6xVTW/bOBD9K8TsHoVQTvaw0M1Nm8DtIUU+mkNgFLQ0lphKJMMZBU0M/feC+nDsOI2F",
+	"1hdbGj0O37zHGa4gtZWzBg0TJCvwSM4awvbl1BqqK/Szj5d9OERTaxgNh0flXKlTxdoaeU/WhBilBVYq",
+	"PDlvHXrWXTKdhV9+cggJEHttcmiaCDw+1NpjBsldwMyjAWMX95gyNAGUIaVeu7ARJHDxBZpoze4A3NI+",
+	"1fc3SUZgVIX72W9m6deMr+aT9/YQpVRIpPIRbAfgGIo3Bn86TBkz0fIMhK90bmbmAIzZ/kCzn28HGy/o",
+	"jVE1F9brZ8w2WW5jp2mKRKJNLjSJShMNuxOmtdf8dBWId1wXqDz6ac3Fy9uZ9ZViSODz7TVEXZmBYPcV",
+	"1oQLZtfR1WZpB8FU2grWnTA4uz6/OL8QM6IaCSKofdmvpETKXHNRL45SW0mPz2paaa8nxydyybnN7bcT",
+	"qbt1O4pcFyhOa2JboRe3uBDTr7NQrVOehV0KLlD0W2dYWUPsW+/Eho+hEM1lYPk6FUTwiJ66vSZH8VEc",
+	"KFiHRjkNCZy0oQic4qKVUQ6tEl5ybBUIR6LdaJZBAufIQ39DtD2VjuM4/P3rcQkJ/CNfBphc4+TOcGgi",
+	"+C+e7F/45rFpBV2quuT9CbYbefMcQXK3fYLu5s08AKTHXBN3cjhLb+hx2SO2RHmokfiDzZ7+ovvGjbbR",
+	"w2yoRAwOi54mbCZkX2OzY+tkvK0bN9LhvOnNIJ0bbX5vRTf4Dm7E+3fQO1fNGFtCTUKbP3FlRLO9ugoO",
+	"68jrULTbQwHhwwRqO+xlZiZSrgpL3CQrZz03UjktHydhXCmv1aLsaix6m9ekobSpKttwE0FYuv35/ziO",
+	"g8rz5lcAAAD//ynS+ag/CQAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

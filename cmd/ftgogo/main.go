@@ -3,9 +3,13 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rezaAmiri123/ftgogoV3/accounting"
 	"github.com/rezaAmiri123/ftgogoV3/consumer"
@@ -17,6 +21,7 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/internal/rpc"
 	"github.com/rezaAmiri123/ftgogoV3/internal/waiter"
 	"github.com/rezaAmiri123/ftgogoV3/internal/web"
+	"github.com/rezaAmiri123/ftgogoV3/internal/web/swagger"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen"
 	"github.com/rezaAmiri123/ftgogoV3/order"
 	"github.com/rezaAmiri123/ftgogoV3/restaurant"
@@ -75,7 +80,7 @@ func run() (err error) {
 	}
 
 	// Mount general web resources
-	// m.mux.Mount("/", http.FileServer(http.FS(web.WebUI)))
+	m.mux.Mount("/", http.FileServer(http.FS(swagger.WebUI)))
 
 	fmt.Println("started ftgogo application")
 	defer fmt.Println("stopped ftgogo application")
@@ -96,5 +101,32 @@ func initRpc(_ rpc.RpcConfig) *grpc.Server {
 }
 
 func initMux(_ web.WebConfig) *chi.Mux {
-	return chi.NewMux()
+	mux := chi.NewMux()
+
+	mux.Use(
+		middleware.Recoverer,
+		middleware.Compress(5),
+		middleware.Timeout(time.Second*60),
+		middleware.Heartbeat("/liveness"),
+	)
+
+	// secure
+	mux.Use(
+		middleware.SetHeader("X-Content-Type-Options", "nosniff"),
+		middleware.SetHeader("X-Frame-Options", "SAMEORIGIN"),
+		middleware.SetHeader("X-XSS-Protection", "1; mode-block"),
+		middleware.NoCache,
+	)
+
+	// cors
+	mux.Use(cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}).Handler)
+
+	return mux
 }
