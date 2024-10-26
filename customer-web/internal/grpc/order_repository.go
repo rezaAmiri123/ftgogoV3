@@ -34,6 +34,25 @@ func (r OrderRepository) Create(ctx context.Context, create domain.CreateOrder) 
 	return resp.GetOrderID(), nil
 }
 
+func (r OrderRepository) Find(ctx context.Context, find domain.FindOrder) (*domain.Order, error) {
+	orderResp, err := r.client.GetOrder(ctx, &orderpb.GetOrderRequest{
+		OrderID: find.OrderID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r.toOrderDomain(orderResp.Order), nil
+}
+
+func (r OrderRepository) toOrderDomain(order *orderpb.Order) *domain.Order {
+	return &domain.Order{
+		OrderID:      order.OrderID,
+		ConsumerID:   order.ConsumerID,
+		RestaurantID: order.RestaurantID,
+		Total:        int(order.OrderTotal),
+		Status:       string(order.Status),
+	}
+}
 func (r OrderRepository) toAddressProto(address domain.Address) *orderpb.Address {
 	return &orderpb.Address{
 		Street1: address.Street1,

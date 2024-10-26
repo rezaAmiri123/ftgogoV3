@@ -20,6 +20,7 @@ type (
 	}
 	Queries interface {
 		GetConsumer(ctx context.Context, query queries.GetConsumer) (*domain.Consumer, error)
+		GetOrder(ctx context.Context, query queries.GetOrder) (*domain.Order, error)
 	}
 
 	Application struct {
@@ -33,6 +34,7 @@ type (
 	}
 	appQueries struct {
 		queries.GetConsumerHandler
+		queries.GetOrderHandler
 	}
 )
 
@@ -47,6 +49,7 @@ func New(consumers domain.ConsumerRepository, orders domain.OrderRepository) *Ap
 		},
 		appQueries: appQueries{
 			GetConsumerHandler: queries.NewGetConsumerHandler(consumers),
+			GetOrderHandler:    queries.NewGetOrderHandler(orders),
 		},
 	}
 }

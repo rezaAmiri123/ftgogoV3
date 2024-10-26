@@ -47,3 +47,9 @@ func (a Application) CreateOrder(ctx context.Context, cmd commands.CreateOrder) 
 	defer func() { a.logger.Info().Err(err).Msg("<--customer-web.CreateOrder") }()
 	return a.App.CreateOrder(ctx, cmd)
 }
+
+func (a Application) GetOrder(ctx context.Context, query queries.GetOrder) (_ *domain.Order, err error) {
+	a.logger.Info().Msg("-->customer-web.GetOrder")
+	defer func() { a.logger.Info().Err(err).Msg("<--customer-web.GetOrder") }()
+	return a.App.GetOrder(ctx, query)
+}

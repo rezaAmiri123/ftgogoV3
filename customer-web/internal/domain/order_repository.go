@@ -13,8 +13,12 @@ type (
 		DeliverTo    Address
 		LineItems    MenuItemQuantities
 	}
+	FindOrder struct {
+		OrderID string
+	}
 )
 
 type OrderRepository interface {
 	Create(ctx context.Context, create CreateOrder) (string, error)
+	Find(ctx context.Context, find FindOrder) (*Order, error)
 }

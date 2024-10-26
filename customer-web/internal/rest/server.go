@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/go-chi/render"
+	"github.com/google/uuid"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/rezaAmiri123/ftgogoV3/customer-web/customerapi"
@@ -68,6 +69,9 @@ func (s *Server) Mount() http.Handler {
 
 		r.Route("/orders", func(r chi.Router) {
 			r.Post("/", s.CreateOrder)
+			r.Route("/{orderID}", func(r chi.Router) {
+				r.Get("/", s.withOrderID(s.GetOrder))
+			})
 		})
 	})
 	return s.router
@@ -233,19 +237,66 @@ func (s Server) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	consumerID := s.cosnumerID(r.Context())
-	orderID, err := s.app.CreateOrder(r.Context(),commands.CreateOrder{
-		ConsumerID: consumerID,
+	orderID, err := s.app.CreateOrder(r.Context(), commands.CreateOrder{
+		ConsumerID:   consumerID,
 		RestaurantID: request.RestaurantId,
-		AddressID: request.AddressId,
-		LineItems: domain.MenuItemQuantities(request.LineItems),
+		AddressID:    request.AddressId,
+		LineItems:    domain.MenuItemQuantities(request.LineItems),
 	})
 	if err != nil {
 		render.Render(w, r, web.NewErrorResponse(err))
 		return
 	}
 
-	render.Status(r,http.StatusCreated)
-	render.Respond(w,r,customerapi.OrderIDResponse{
+	render.Status(r, http.StatusCreated)
+	render.Respond(w, r, customerapi.OrderIDResponse{
 		Id: orderID,
 	})
+}
+
+func (s Server) withOrderID(next func(http.ResponseWriter, *http.Request, customerapi.OrderID)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		orderID, err := uuid.Parse(chi.URLParam(r, "orderID"))
+		if err != nil {
+			render.Render(w, r, web.NewErrorResponse(err))
+			return
+		}
+		next(w, r, customerapi.OrderID(orderID))
+	}
+}
+
+func (s Server) GetOrder(w http.ResponseWriter, r *http.Request, orderID customerapi.OrderID) {
+	consumerID := s.cosnumerID(r.Context())
+	order, err := s.app.GetOrder(r.Context(), queries.GetOrder{
+		ConsumerID: consumerID,
+		OrderID:    orderID.String(),
+	})
+	if err != nil {
+		render.Render(w, r, web.NewErrorResponse(err))
+		return
+	}
+
+	render.Respond(w, r, customerapi.OrderResponse{
+		Order: s.toOrderJson(order),
+	})
+
+}
+
+func (s Server) toOrderJson(order *domain.Order) customerapi.Order {
+	return customerapi.Order{
+		OrderId:    order.OrderID,
+		OrderTotal: order.Total,
+		Status:     s.toOrderStatusJson(order.Status),
+	}
+}
+
+func (s Server) toOrderStatusJson(status string) customerapi.OrderStatus {
+	switch status {
+	case string(customerapi.ApprovalPending):
+		return customerapi.ApprovalPending
+	case string(customerapi.Approved):
+		return customerapi.Approved
+	default:
+		return customerapi.Unknown
+	}
 }
