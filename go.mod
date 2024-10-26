@@ -8,10 +8,11 @@ require (
 	github.com/go-chi/cors v1.2.1
 	github.com/go-chi/jwtauth/v5 v5.3.1
 	github.com/go-chi/render v1.0.3
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.5.0
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lestrrat-go/jwx v1.2.30
+	github.com/oapi-codegen/runtime v1.1.1
 	github.com/rs/zerolog v1.33.0
 	github.com/stackus/dotenv v0.0.0-20221206033122-02295762494b
 	github.com/stackus/errors v0.1.6
@@ -22,6 +23,7 @@ require (
 
 require (
 	github.com/ajg/form v1.5.1 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
@@ -45,12 +47,11 @@ require (
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
-	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
