@@ -1,0 +1,271 @@
+{
+	"info": {
+		"_postman_id": "4737a9b6-1381-4786-95cd-3545db41def9",
+		"name": "FTGO",
+		"description": "Collection of REST calls for the services within the ftogogo application.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "5314094"
+	},
+	"item": [
+		{
+			"name": "Consumer",
+			"item": [
+				{
+					"name": "Register Consumer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();\r",
+									"pm.environment.set(\"consumerID\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"strictSSL": false
+					},
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"{{$randomFullName}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{CONSUMER_HOST}}/api/v1/register",
+							"host": [
+								"{{CONSUMER_HOST}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"register"
+							]
+						},
+						"description": "Register a new consumer"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Consumer",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{CONSUMER_HOST}}/api/v1/consumer/",
+							"host": [
+								"{{CONSUMER_HOST}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"consumer",
+								""
+							]
+						},
+						"description": "Get a previously generated consumer (Register Consumer)"
+					},
+					"response": []
+				},
+				{
+					"name": "Login Consumer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();\r",
+									"pm.environment.set(\"token\", jsonData.token);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"strictSSL": false
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"consumer_id\": \"{{consumerID}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{CONSUMER_HOST}}/api/v1/signin",
+							"host": [
+								"{{CONSUMER_HOST}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"signin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "add address",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.environment.set(\"address_id\", jsonData.address_id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"strictSSL": false
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"1\",\r\n    \"address\": {\r\n        \"city\": \"city1\",\r\n        \"state\":\"state1\",\r\n        \"street1\": \"street1\",\r\n        \"street2\": \"street2\",\r\n        \"zip\": \"zip1\" \r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{CONSUMER_HOST}}/api/v1/addresses/",
+							"host": [
+								"{{CONSUMER_HOST}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"addresses",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "CONSUMER_PORT",
+			"value": ":8002"
+		},
+		{
+			"key": "HOST",
+			"value": "http://127.0.0.1"
+		},
+		{
+			"key": "STORE_HOST",
+			"value": "http://127.0.0.1",
+			"type": "string"
+		},
+		{
+			"key": "STORE_PORT",
+			"value": ":8003",
+			"type": "string"
+		},
+		{
+			"key": "HOST",
+			"value": "http://customer.ftgogo.local",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "CONSUMER_PORT",
+			"value": "",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "STORE_HOST",
+			"value": "http://store.ftgogo.local",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "STORE_PORT",
+			"value": "",
+			"type": "string",
+			"disabled": true
+		},
+		{
+			"key": "RESTAURANT_PORT",
+			"value": ":8006"
+		},
+		{
+			"key": "KITCHEN_PORT",
+			"value": ":8004"
+		},
+		{
+			"key": "ORDER_PORT",
+			"value": ":8005"
+		},
+		{
+			"key": "ACCOUNTS_PORT",
+			"value": ":8001"
+		}
+	]
+}

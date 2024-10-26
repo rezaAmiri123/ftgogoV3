@@ -115,7 +115,7 @@ func (a *app) waitForRPC(ctx context.Context) error {
 			close(stopped)
 		}()
 		timeout := time.NewTimer(a.cfg.ShutdownTimeout)
-		select{
+		select {
 		case <-timeout.C:
 			// Force it to stop
 			a.RPC().Stop()

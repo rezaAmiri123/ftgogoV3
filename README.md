@@ -35,7 +35,7 @@ Open a command prompt and then execute the following docker command
 ### Mac, Linux, and Windows Users
 
 ```bash
-docker-compose up
+docker compose --profile monolith up
 ```
 
 Use `Ctrl-C` to stop all services.

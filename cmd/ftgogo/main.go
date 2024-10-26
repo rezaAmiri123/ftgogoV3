@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 
@@ -89,6 +90,11 @@ func run() (err error) {
 		m.waitForWeb,
 		m.waitForRPC,
 	)
+
+	// enable profiler
+	go func() {
+		http.ListenAndServe(":6060", nil)
+	}()
 
 	return m.waiter.Wait()
 }

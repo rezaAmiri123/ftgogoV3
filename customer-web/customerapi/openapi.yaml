@@ -68,6 +68,69 @@ paths:
           $ref: '#/components/responses/UnauthorizedResponse'
         default:
           $ref: '#/components/responses/ErrorResponse'
+  /addresses:
+    post:
+      operationId: addConsumerAddress
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        description: add consumer address
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, address]
+              properties:
+                name:
+                  type: string
+                address:
+                  $ref: '#/components/schemas/Address'
+      responses:
+        '201':
+          $ref: '#/components/responses/ConsumerAddressIDResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+  /orders:
+    post:
+      operationId: createOrder
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        description: create order request
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [consumer_id, restaurant_id, address_id, line_items]
+              properties:
+                consumer_id:
+                  type: string
+                restaurant_id:
+                  type: string
+                address_id:
+                  type: string
+                line_items:
+                  $ref: '#/components/schemas/MenuItemQuantities'
+      responses:
+        '201':
+          $ref: '#/components/responses/OrderIDResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+  /orders/{orderID}:
+    get:
+      operationId: getOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/OrderID'
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+        
 security:
   - { }
   - bearerAuth: [ ]
@@ -78,6 +141,47 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    Address:
+      type: object
+      required: [street1, city, state, zip]
+      properties:
+        street1:
+          type: string
+        street2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+    MenuItemQuantities:
+      type: object
+      additionalProperties:
+        type: integer
+    OrderStatus:
+      type: string
+      enum: [ Unknown, ApprovalPending, Approved ]
+    Order:
+      type: object
+      required: [ order_id, status, order_total ]
+      properties:
+        order_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        order_total:
+          type: integer
+  parameters:
+    OrderID:
+      in: path
+      name: orderID
+      description: order id (uuid)
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
     EmptyResponse:
       description: No Content
@@ -125,3 +229,35 @@ components:
                 type: string
               name:
                 type: string
+    ConsumerAddressIDResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ consumer_id, address_id ]
+            properties:
+              consumer_id:
+                type: string
+              address_id:
+                type: string
+    OrderIDResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [id]
+            properties:
+              id:
+                type: string
+    OrderResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ order ]
+            properties:
+              order:
+                $ref: '#/components/schemas/Order'

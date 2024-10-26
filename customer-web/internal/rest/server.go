@@ -14,6 +14,7 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/customer-web/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/customer-web/internal/application/commands"
 	"github.com/rezaAmiri123/ftgogoV3/customer-web/internal/application/queries"
+	"github.com/rezaAmiri123/ftgogoV3/customer-web/internal/domain"
 	"github.com/rezaAmiri123/ftgogoV3/internal/web"
 	"github.com/stackus/errors"
 )
@@ -59,6 +60,14 @@ func (s *Server) Mount() http.Handler {
 
 		r.Route("/consumer", func(r chi.Router) {
 			r.Get("/", s.GetConsumer)
+		})
+
+		r.Route("/addresses", func(r chi.Router) {
+			r.Post("/", s.AddConsumerAddress)
+		})
+
+		r.Route("/orders", func(r chi.Router) {
+			r.Post("/", s.CreateOrder)
 		})
 	})
 	return s.router
@@ -176,5 +185,67 @@ func (s Server) GetConsumer(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, customerapi.ConsumerResponse{
 		ConsumerId: consumer.ConsumerID,
 		Name:       consumer.Name,
+	})
+}
+
+func (s Server) AddConsumerAddress(w http.ResponseWriter, r *http.Request) {
+	var request customerapi.AddConsumerAddressJSONRequestBody
+	err := render.Decode(r, &request)
+	if err != nil {
+		render.Render(w, r, web.NewErrorResponse(err))
+		return
+	}
+
+	consumerID := s.cosnumerID(r.Context())
+	err = s.app.AddConsumerAddress(r.Context(), commands.AddConsumerAddress{
+		ConsumerID: consumerID,
+		AddressID:  request.Name,
+		Address:    s.toAddressDomain(request.Address),
+	})
+	if err != nil {
+		render.Render(w, r, web.NewErrorResponse(err))
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.Respond(w, r, customerapi.ConsumerAddressIDResponse{
+		AddressId:  request.Name,
+		ConsumerId: consumerID,
+	})
+}
+
+func (s Server) toAddressDomain(address customerapi.Address) domain.Address {
+	return domain.Address{
+		Street1: address.Street1,
+		Street2: *address.Street2,
+		City:    address.City,
+		State:   address.State,
+		Zip:     address.Zip,
+	}
+}
+
+func (s Server) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	var request customerapi.CreateOrderJSONRequestBody
+	err := render.Decode(r, &request)
+	if err != nil {
+		render.Render(w, r, web.NewErrorResponse(err))
+		return
+	}
+
+	consumerID := s.cosnumerID(r.Context())
+	orderID, err := s.app.CreateOrder(r.Context(),commands.CreateOrder{
+		ConsumerID: consumerID,
+		RestaurantID: request.RestaurantId,
+		AddressID: request.AddressId,
+		LineItems: domain.MenuItemQuantities(request.LineItems),
+	})
+	if err != nil {
+		render.Render(w, r, web.NewErrorResponse(err))
+		return
+	}
+
+	render.Status(r,http.StatusCreated)
+	render.Respond(w,r,customerapi.OrderIDResponse{
+		Id: orderID,
 	})
 }

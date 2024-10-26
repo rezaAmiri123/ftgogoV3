@@ -13,9 +13,12 @@ docker-rm-volume:
 docker-run:
 	docker compose up
 run-dev:
-	go run cmd/ftgogo/*
+	GODEBUG=httpmuxgo121=1 go run cmd/ftgogo/*
 evans:
 	evans --host localhost --port $(EVANS_PORT) -r repl
 
 psql:
 	PGPASSWORD=ftgogo_pass psql -h postgres -U ftgogo_user -d ftgogo
+
+pprof-heap:
+	go tool pprof -http localhost:9090 http://localhost:6060/debug/pprof/heap?debug=1

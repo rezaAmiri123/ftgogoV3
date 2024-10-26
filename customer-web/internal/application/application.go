@@ -15,6 +15,8 @@ type (
 	}
 	Commands interface {
 		RegisterConsumer(ctx context.Context, cmd commands.RegisterConsumer) (string, error)
+		AddConsumerAddress(ctx context.Context, cmd commands.AddConsumerAddress) error
+		CreateOrder(ctx context.Context, cmd commands.CreateOrder) (string, error)
 	}
 	Queries interface {
 		GetConsumer(ctx context.Context, query queries.GetConsumer) (*domain.Consumer, error)
@@ -26,6 +28,8 @@ type (
 	}
 	appCommands struct {
 		commands.RegisterConsumerHandler
+		commands.AddConsumerAddressHandler
+		commands.CreateOrderHandler
 	}
 	appQueries struct {
 		queries.GetConsumerHandler
@@ -34,10 +38,12 @@ type (
 
 var _ App = (*Application)(nil)
 
-func New(consumers domain.ConsumerRepository) *Application {
+func New(consumers domain.ConsumerRepository, orders domain.OrderRepository) *Application {
 	return &Application{
 		appCommands: appCommands{
-			RegisterConsumerHandler: commands.NewRegisterConsumerHandler(consumers),
+			RegisterConsumerHandler:   commands.NewRegisterConsumerHandler(consumers),
+			AddConsumerAddressHandler: commands.NewAddConsumerAddressHandler(consumers),
+			CreateOrderHandler:        commands.NewCreateOrderHandler(consumers, orders),
 		},
 		appQueries: appQueries{
 			GetConsumerHandler: queries.NewGetConsumerHandler(consumers),

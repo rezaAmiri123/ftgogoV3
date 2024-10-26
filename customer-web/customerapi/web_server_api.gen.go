@@ -18,11 +18,51 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
 	BearerAuthScopes = "bearerAuth.Scopes"
 )
+
+// Defines values for OrderStatus.
+const (
+	ApprovalPending OrderStatus = "ApprovalPending"
+	Approved        OrderStatus = "Approved"
+	Unknown         OrderStatus = "Unknown"
+)
+
+// Address defines model for Address.
+type Address struct {
+	City    string  `json:"city"`
+	State   string  `json:"state"`
+	Street1 string  `json:"street1"`
+	Street2 *string `json:"street2,omitempty"`
+	Zip     string  `json:"zip"`
+}
+
+// MenuItemQuantities defines model for MenuItemQuantities.
+type MenuItemQuantities map[string]int
+
+// Order defines model for Order.
+type Order struct {
+	OrderId    string      `json:"order_id"`
+	OrderTotal int         `json:"order_total"`
+	Status     OrderStatus `json:"status"`
+}
+
+// OrderStatus defines model for OrderStatus.
+type OrderStatus string
+
+// OrderID defines model for OrderID.
+type OrderID = openapi_types.UUID
+
+// ConsumerAddressIDResponse defines model for ConsumerAddressIDResponse.
+type ConsumerAddressIDResponse struct {
+	AddressId  string `json:"address_id"`
+	ConsumerId string `json:"consumer_id"`
+}
 
 // ConsumerIDResponse defines model for ConsumerIDResponse.
 type ConsumerIDResponse struct {
@@ -40,9 +80,33 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// OrderIDResponse defines model for OrderIDResponse.
+type OrderIDResponse struct {
+	Id string `json:"id"`
+}
+
+// OrderResponse defines model for OrderResponse.
+type OrderResponse struct {
+	Order Order `json:"order"`
+}
+
 // SignInResponse defines model for SignInResponse.
 type SignInResponse struct {
 	Token string `json:"token"`
+}
+
+// AddConsumerAddressJSONBody defines parameters for AddConsumerAddress.
+type AddConsumerAddressJSONBody struct {
+	Address Address `json:"address"`
+	Name    string  `json:"name"`
+}
+
+// CreateOrderJSONBody defines parameters for CreateOrder.
+type CreateOrderJSONBody struct {
+	AddressId    string             `json:"address_id"`
+	ConsumerId   string             `json:"consumer_id"`
+	LineItems    MenuItemQuantities `json:"line_items"`
+	RestaurantId string             `json:"restaurant_id"`
 }
 
 // RegisterConsumerJSONBody defines parameters for RegisterConsumer.
@@ -54,6 +118,12 @@ type RegisterConsumerJSONBody struct {
 type SignInConsumerJSONBody struct {
 	ConsumerId string `json:"consumer_id"`
 }
+
+// AddConsumerAddressJSONRequestBody defines body for AddConsumerAddress for application/json ContentType.
+type AddConsumerAddressJSONRequestBody AddConsumerAddressJSONBody
+
+// CreateOrderJSONRequestBody defines body for CreateOrder for application/json ContentType.
+type CreateOrderJSONRequestBody CreateOrderJSONBody
 
 // RegisterConsumerJSONRequestBody defines body for RegisterConsumer for application/json ContentType.
 type RegisterConsumerJSONRequestBody RegisterConsumerJSONBody
@@ -134,8 +204,21 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// AddConsumerAddressWithBody request with any body
+	AddConsumerAddressWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AddConsumerAddress(ctx context.Context, body AddConsumerAddressJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetConsumer request
 	GetConsumer(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOrderWithBody request with any body
+	CreateOrderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateOrder(ctx context.Context, body CreateOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOrder request
+	GetOrder(ctx context.Context, orderID OrderID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RegisterConsumerWithBody request with any body
 	RegisterConsumerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -148,8 +231,68 @@ type ClientInterface interface {
 	SignInConsumer(ctx context.Context, body SignInConsumerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
+func (c *Client) AddConsumerAddressWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddConsumerAddressRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AddConsumerAddress(ctx context.Context, body AddConsumerAddressJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddConsumerAddressRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetConsumer(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetConsumerRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateOrderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOrderRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateOrder(ctx context.Context, body CreateOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOrderRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOrder(ctx context.Context, orderID OrderID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOrderRequest(c.Server, orderID)
 	if err != nil {
 		return nil, err
 	}
@@ -208,6 +351,46 @@ func (c *Client) SignInConsumer(ctx context.Context, body SignInConsumerJSONRequ
 	return c.Client.Do(req)
 }
 
+// NewAddConsumerAddressRequest calls the generic AddConsumerAddress builder with application/json body
+func NewAddConsumerAddressRequest(server string, body AddConsumerAddressJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAddConsumerAddressRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAddConsumerAddressRequestWithBody generates requests for AddConsumerAddress with any type of body
+func NewAddConsumerAddressRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/addresses")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetConsumerRequest generates requests for GetConsumer
 func NewGetConsumerRequest(server string) (*http.Request, error) {
 	var err error
@@ -218,6 +401,80 @@ func NewGetConsumerRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/consumer")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateOrderRequest calls the generic CreateOrder builder with application/json body
+func NewCreateOrderRequest(server string, body CreateOrderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateOrderRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateOrderRequestWithBody generates requests for CreateOrder with any type of body
+func NewCreateOrderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/orders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetOrderRequest generates requests for GetOrder
+func NewGetOrderRequest(server string, orderID OrderID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "orderID", runtime.ParamLocationPath, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/orders/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -358,8 +615,21 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// AddConsumerAddressWithBodyWithResponse request with any body
+	AddConsumerAddressWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddConsumerAddressResponse, error)
+
+	AddConsumerAddressWithResponse(ctx context.Context, body AddConsumerAddressJSONRequestBody, reqEditors ...RequestEditorFn) (*AddConsumerAddressResponse, error)
+
 	// GetConsumerWithResponse request
 	GetConsumerWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConsumerResponse, error)
+
+	// CreateOrderWithBodyWithResponse request with any body
+	CreateOrderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrderResponse, error)
+
+	CreateOrderWithResponse(ctx context.Context, body CreateOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOrderResponse, error)
+
+	// GetOrderWithResponse request
+	GetOrderWithResponse(ctx context.Context, orderID OrderID, reqEditors ...RequestEditorFn) (*GetOrderResponse, error)
 
 	// RegisterConsumerWithBodyWithResponse request with any body
 	RegisterConsumerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterConsumerResponse, error)
@@ -370,6 +640,29 @@ type ClientWithResponsesInterface interface {
 	SignInConsumerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SignInConsumerResponse, error)
 
 	SignInConsumerWithResponse(ctx context.Context, body SignInConsumerJSONRequestBody, reqEditors ...RequestEditorFn) (*SignInConsumerResponse, error)
+}
+
+type AddConsumerAddressResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *ConsumerAddressIDResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r AddConsumerAddressResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AddConsumerAddressResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetConsumerResponse struct {
@@ -389,6 +682,52 @@ func (r GetConsumerResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetConsumerResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateOrderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *OrderIDResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateOrderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateOrderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetOrderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrderResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOrderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOrderResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -441,6 +780,23 @@ func (r SignInConsumerResponse) StatusCode() int {
 	return 0
 }
 
+// AddConsumerAddressWithBodyWithResponse request with arbitrary body returning *AddConsumerAddressResponse
+func (c *ClientWithResponses) AddConsumerAddressWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddConsumerAddressResponse, error) {
+	rsp, err := c.AddConsumerAddressWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddConsumerAddressResponse(rsp)
+}
+
+func (c *ClientWithResponses) AddConsumerAddressWithResponse(ctx context.Context, body AddConsumerAddressJSONRequestBody, reqEditors ...RequestEditorFn) (*AddConsumerAddressResponse, error) {
+	rsp, err := c.AddConsumerAddress(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAddConsumerAddressResponse(rsp)
+}
+
 // GetConsumerWithResponse request returning *GetConsumerResponse
 func (c *ClientWithResponses) GetConsumerWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetConsumerResponse, error) {
 	rsp, err := c.GetConsumer(ctx, reqEditors...)
@@ -448,6 +804,32 @@ func (c *ClientWithResponses) GetConsumerWithResponse(ctx context.Context, reqEd
 		return nil, err
 	}
 	return ParseGetConsumerResponse(rsp)
+}
+
+// CreateOrderWithBodyWithResponse request with arbitrary body returning *CreateOrderResponse
+func (c *ClientWithResponses) CreateOrderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrderResponse, error) {
+	rsp, err := c.CreateOrderWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOrderResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateOrderWithResponse(ctx context.Context, body CreateOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOrderResponse, error) {
+	rsp, err := c.CreateOrder(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOrderResponse(rsp)
+}
+
+// GetOrderWithResponse request returning *GetOrderResponse
+func (c *ClientWithResponses) GetOrderWithResponse(ctx context.Context, orderID OrderID, reqEditors ...RequestEditorFn) (*GetOrderResponse, error) {
+	rsp, err := c.GetOrder(ctx, orderID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOrderResponse(rsp)
 }
 
 // RegisterConsumerWithBodyWithResponse request with arbitrary body returning *RegisterConsumerResponse
@@ -484,6 +866,39 @@ func (c *ClientWithResponses) SignInConsumerWithResponse(ctx context.Context, bo
 	return ParseSignInConsumerResponse(rsp)
 }
 
+// ParseAddConsumerAddressResponse parses an HTTP response from a AddConsumerAddressWithResponse call
+func ParseAddConsumerAddressResponse(rsp *http.Response) (*AddConsumerAddressResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AddConsumerAddressResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ConsumerAddressIDResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetConsumerResponse parses an HTTP response from a GetConsumerWithResponse call
 func ParseGetConsumerResponse(rsp *http.Response) (*GetConsumerResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -500,6 +915,72 @@ func ParseGetConsumerResponse(rsp *http.Response) (*GetConsumerResponse, error) 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest ConsumerResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateOrderResponse parses an HTTP response from a CreateOrderWithResponse call
+func ParseCreateOrderResponse(rsp *http.Response) (*CreateOrderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateOrderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest OrderIDResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOrderResponse parses an HTTP response from a GetOrderWithResponse call
+func ParseGetOrderResponse(rsp *http.Response) (*GetOrderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOrderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrderResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -586,8 +1067,17 @@ func ParseSignInConsumerResponse(rsp *http.Response) (*SignInConsumerResponse, e
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (POST /addresses)
+	AddConsumerAddress(w http.ResponseWriter, r *http.Request)
+
 	// (GET /consumer)
 	GetConsumer(w http.ResponseWriter, r *http.Request)
+
+	// (POST /orders)
+	CreateOrder(w http.ResponseWriter, r *http.Request)
+
+	// (GET /orders/{orderID})
+	GetOrder(w http.ResponseWriter, r *http.Request, orderID OrderID)
 
 	// (POST /register)
 	RegisterConsumer(w http.ResponseWriter, r *http.Request)
@@ -600,8 +1090,23 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
+// (POST /addresses)
+func (_ Unimplemented) AddConsumerAddress(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // (GET /consumer)
 func (_ Unimplemented) GetConsumer(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (POST /orders)
+func (_ Unimplemented) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// (GET /orders/{orderID})
+func (_ Unimplemented) GetOrder(w http.ResponseWriter, r *http.Request, orderID OrderID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -624,6 +1129,23 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// AddConsumerAddress operation middleware
+func (siw *ServerInterfaceWrapper) AddConsumerAddress(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddConsumerAddress(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
 // GetConsumer operation middleware
 func (siw *ServerInterfaceWrapper) GetConsumer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -632,6 +1154,51 @@ func (siw *ServerInterfaceWrapper) GetConsumer(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetConsumer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// CreateOrder operation middleware
+func (siw *ServerInterfaceWrapper) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateOrder(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// GetOrder operation middleware
+func (siw *ServerInterfaceWrapper) GetOrder(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "orderID" -------------
+	var orderID OrderID
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "orderID", runtime.ParamLocationPath, chi.URLParam(r, "orderID"), &orderID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderID", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOrder(w, r, orderID)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -785,7 +1352,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/addresses", wrapper.AddConsumerAddress)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/consumer", wrapper.GetConsumer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/orders", wrapper.CreateOrder)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/orders/{orderID}", wrapper.GetOrder)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/register", wrapper.RegisterConsumer)
@@ -800,18 +1376,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/6xVTW/bOBD9K8TsHoVQTvaw0M1Nm8DtIUU+mkNgFLQ0lphKJMMZBU0M/feC+nDsOI2F",
-	"1hdbGj0O37zHGa4gtZWzBg0TJCvwSM4awvbl1BqqK/Szj5d9OERTaxgNh0flXKlTxdoaeU/WhBilBVYq",
-	"PDlvHXrWXTKdhV9+cggJEHttcmiaCDw+1NpjBsldwMyjAWMX95gyNAGUIaVeu7ARJHDxBZpoze4A3NI+",
-	"1fc3SUZgVIX72W9m6deMr+aT9/YQpVRIpPIRbAfgGIo3Bn86TBkz0fIMhK90bmbmAIzZ/kCzn28HGy/o",
-	"jVE1F9brZ8w2WW5jp2mKRKJNLjSJShMNuxOmtdf8dBWId1wXqDz6ac3Fy9uZ9ZViSODz7TVEXZmBYPcV",
-	"1oQLZtfR1WZpB8FU2grWnTA4uz6/OL8QM6IaCSKofdmvpETKXHNRL45SW0mPz2paaa8nxydyybnN7bcT",
-	"qbt1O4pcFyhOa2JboRe3uBDTr7NQrVOehV0KLlD0W2dYWUPsW+/Eho+hEM1lYPk6FUTwiJ66vSZH8VEc",
-	"KFiHRjkNCZy0oQic4qKVUQ6tEl5ybBUIR6LdaJZBAufIQ39DtD2VjuM4/P3rcQkJ/CNfBphc4+TOcGgi",
-	"+C+e7F/45rFpBV2quuT9CbYbefMcQXK3fYLu5s08AKTHXBN3cjhLb+hx2SO2RHmokfiDzZ7+ovvGjbbR",
-	"w2yoRAwOi54mbCZkX2OzY+tkvK0bN9LhvOnNIJ0bbX5vRTf4Dm7E+3fQO1fNGFtCTUKbP3FlRLO9ugoO",
-	"68jrULTbQwHhwwRqO+xlZiZSrgpL3CQrZz03UjktHydhXCmv1aLsaix6m9ekobSpKttwE0FYuv35/ziO",
-	"g8rz5lcAAAD//ynS+ag/CQAA",
+	"H4sIAAAAAAAC/8xYzW7jNhB+FYHtoQWEyEl6KHRzk27gFoXTTdI9BMaClsYSdyWSJUduE0PvXpAUbcmW",
+	"Y62rLXqzyPn5ZjjfcOgNSUQpBQeOmsQbIqmiJSAo+zVXKajZrfmZgk4Uk8gEJzERZiNgafBdVbH0exIS",
+	"ZpYlxZyEhNMSvNDsloREwZ8VU5CSGFUFIdFJDiU1ZldClRRJTIwdEhJ8kUZVo2I8I3VdG2UtBddgEd0I",
+	"rqsS1DRNFWg9u33f7JrNRHAEjuYnlbJgCTVwo0/aYN60vEolJChkziZ1tj6y1HztIQiNVeuyf79uR/fc",
+	"EQ7blhfb2MTyEyToYutmdf6r8edDHCW2IZjPQjcCtrcT68voyzJudYZH87NSYoxQStCaZgPQesEhEJ84",
+	"/C0hQUgDi9MAbhj5f6wMC20EYLZtmB/fKliRmHwT7VpU5JR0ZJ0d4HWqwyE/sIzP+AiYUXwGfjqfTmw4",
+	"vidOK8yFYq+QtlF2ZadJAloH1njAdFAyrb33Jl9GqWmZPTxk+NJLQI0U4ciOAsDLN/auevdemTydJW88",
+	"dMg8Dqd9mLyQ/Aa8miGUv1eUI2u1dWYyRIv77lk5dcYRMrCkOjA49yXYU5nHupXbRIG06Pdioqj0oMJ+",
+	"cKK95e36XGOs63ZxLJSHrWvgVWlMPfHPXPzFSUimUiqxpsU98NSE4legzf3WSWlIKsXw5cEAdnlZAlWg",
+	"phXmu693/mL/5cMjaerQWHK7u5s+R5SOAIyvhKcgTSwFm0Hi3ePd/G4ezLSuwMRcqaLR1HEUZQzzanmR",
+	"iDJS8EqnJVPs8uo6WmEmMvHHdcSc3gHHHnMIbiqNogQVfIBlML2fGf5IqjAQqwBzCBrXKZSCa1S2GwSt",
+	"zmACYVgYlPumSEjWoLTzdXkxuZjYMpHAqWQkJtd2KbRDk01j1IwLLqlSaJsDU4DW1Sw1XE/TvRGoGa9A",
+	"408iffn3Y9CpAvVuB1/QVmo7Cw3qfjRNA3+vB7QT526M3B8NryaXx7Bv5aLj86MFsaJVgaetdMeGNitI",
+	"/Nzlw/OiXhiByMdjrGfQc7R3gB4dOQhtMjy0dkQ/DMlJ7y3ztdNh+9YbhX6jgCK4RjxyhZ836IekYBw+",
+	"MoTyJEd6LiRXrUgrRTme8ZToKneeFh1kQ+iV2NwG7hHXpHYceu2Pp/9NFUWb5qlZv0UuX0vtJ+5zP6id",
+	"iI+I1ItzONmdib92NhRkTGMzufSy6n0j0Wk0Y1DrC66CIRXqI9ndAqOWac8Te7yzaQ5Ds4wzfvwo3Ntj",
+	"9IM4+9+KIcdiYgoYP+dUBpBl7zU27onsL4WHHDISau37wm7IjKNokwuNdbyRQmEdUcmitXmfrKlidFm4",
+	"GPPmmLegSSESWtjlOiRGtbv942QyMVle1P8EAAD//y6qxxaGEwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

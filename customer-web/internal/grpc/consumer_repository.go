@@ -40,3 +40,46 @@ func (r ConsumerRepository) Find(ctx context.Context, find domain.FindConsumer) 
 		Name:       consumer.GetName(),
 	}, nil
 }
+
+func (r ConsumerRepository) UpdateConsumerAddress(ctx context.Context, update domain.UpdateConsumerAddress) error {
+	_, err := r.client.UpdateAddress(ctx, &consumerpb.UpdateAddressRequest{
+		ConsumerID: update.ConsumerID,
+		AddressID:  update.AddressID,
+		Address:    r.toAddressProto(update.Address),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r ConsumerRepository) FindAddress(ctx context.Context, find domain.FindConsumerAddress) (*domain.Address, error) {
+	address, err := r.client.GetAddress(ctx, &consumerpb.GetAddressRequest{
+		ConsumerID: find.ConsumerID,
+		AddressID:  find.AddressID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r.toAddressDomain(address.GetAddress()), nil
+}
+
+func (r ConsumerRepository) toAddressProto(address domain.Address) *consumerpb.Address {
+	return &consumerpb.Address{
+		Street1: address.Street1,
+		Street2: address.Street2,
+		City:    address.City,
+		State:   address.State,
+		Zip:     address.Zip,
+	}
+}
+
+func (r ConsumerRepository) toAddressDomain(address *consumerpb.Address) *domain.Address {
+	return &domain.Address{
+		Street1: address.Street1,
+		Street2: address.Street2,
+		City:    address.City,
+		State:   address.State,
+		Zip:     address.Zip,
+	}
+}
