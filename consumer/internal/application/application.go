@@ -33,20 +33,21 @@ type (
 		OrderTotal int
 	}
 
-	App interface {
-		RegisterConsumer(ctx context.Context, register RegisterConsumer) error
-		GetConsumer(ctx context.Context, get GetConsumer) (*domain.Consumer, error)
-		UpdateConsumerAddress(ctx context.Context, update UpdateConsumerAddress) error
-		RemoveConsumerAddress(ctx context.Context, remove RemoveConsumerAddress) error
-		GetConsumerAddress(ctx context.Context, get GetConsumerAddress) (domain.Address, error)
-		ValidateOrderByConsumer(ctx context.Context, validate ValidateOrderByConsumer) error
-	}
-
 	Application struct {
 		consumers domain.ConsumerRepository
 		accounts  domain.AccountRepository
 	}
 )
+
+//go:generate mockery --name App
+type App interface {
+	RegisterConsumer(ctx context.Context, register RegisterConsumer) error
+	GetConsumer(ctx context.Context, get GetConsumer) (*domain.Consumer, error)
+	UpdateConsumerAddress(ctx context.Context, update UpdateConsumerAddress) error
+	RemoveConsumerAddress(ctx context.Context, remove RemoveConsumerAddress) error
+	GetConsumerAddress(ctx context.Context, get GetConsumerAddress) (domain.Address, error)
+	ValidateOrderByConsumer(ctx context.Context, validate ValidateOrderByConsumer) error
+}
 
 var _ App = (*Application)(nil)
 
