@@ -18,6 +18,10 @@ This repository exists to demonstrate the patterns and processes involved when c
     1. [CQRS](#cqrs)
     1. [Backend-For-Frontend](#backend-for-frontend-bff)
     1. [GRPC and Protocol Buffers](#grpc-and-protocol-buffers)
+    1. [Testing](#testing)
+        1. [Unit Tests](#unit-tests)
+        1. [Integration Tests](#integration-tests)
+        1. [End To End Tests](#end-to-end-tests)
 1. [Other](#other)
     1. [Mono-repository](#mono-repository)
     1. [Modular-monolith](#modular-monolith)    
@@ -85,3 +89,18 @@ done leaving the contracts previously used by HTTP endpoints unchanged as much a
 
 This demonstration application is a mono-repository for the Golang services. I chose to use as few additional frameworks
 as possible, so you'll find there is also quite a bit of shared code in packages under `/internal`
+
+### Testing
+
+#### End To End Tests
+
+End-to-end written in Gherkin have been added. You can find these in the `/testing/e2e`
+directories.
+
+#### Integration Tests
+
+Integration tests have been added to the consumer module to test gRPC and PostgreSQL server.
+
+#### Unit Tests
+
+Unit tests have been added to the consumer module to test the domain and application layer.
