@@ -221,7 +221,8 @@ func (s Server) AddConsumerAddress(w http.ResponseWriter, r *http.Request) {
 func (s Server) toAddressDomain(address customerapi.Address) domain.Address {
 	return domain.Address{
 		Street1: address.Street1,
-		Street2: *address.Street2,
+		// TODO fix street2
+		// Street2: *address.Street2,
 		City:    address.City,
 		State:   address.State,
 		Zip:     address.Zip,

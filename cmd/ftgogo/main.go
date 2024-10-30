@@ -26,6 +26,7 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/kitchen"
 	"github.com/rezaAmiri123/ftgogoV3/order"
 	"github.com/rezaAmiri123/ftgogoV3/restaurant"
+	storeweb "github.com/rezaAmiri123/ftgogoV3/store-web"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -74,6 +75,7 @@ func run() (err error) {
 		&delivery.Module{},
 		&order.Module{},
 		&customerweb.Module{},
+		&storeweb.Module{},
 	}
 
 	if err = m.startupModules(); err != nil {

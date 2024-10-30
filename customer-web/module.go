@@ -27,7 +27,7 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 
 	server := rest.NewServer(app, mono.Config().Secret)
 	mono.Mux().Mount("/api/v1", server.Mount())
-	mono.Mux().Mount("/spec", rest.SwaggerHandler())
+	mono.Mux().Mount("/spec-customer", rest.SwaggerHandler())
 
 	return nil
 }

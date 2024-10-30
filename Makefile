@@ -22,3 +22,6 @@ psql:
 
 pprof-heap:
 	go tool pprof -http localhost:9090 http://localhost:6060/debug/pprof/heap?debug=1
+
+pprof-goroutine:
+	go tool pprof -http localhost:9090 http://localhost:6060/debug/pprof/goroutine?debug=1

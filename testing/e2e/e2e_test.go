@@ -2,20 +2,21 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/cucumber/godog"
-	"github.com/go-openapi/runtime/client"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/rdumont/assistdog"
 	"github.com/stackus/errors"
 )
-
+var assist = assistdog.NewDefault()
 type lastResponseKey struct{}
 type lastErrorKey struct{}
 
 type featureConfig struct {
-	transport *client.Runtime
 }
 
 type feature interface {
@@ -25,6 +26,26 @@ type feature interface {
 }
 
 func TestEndToEnd(t *testing.T) {
+	assist.RegisterComparer(float64(0.0), func(raw string, actual interface{}) error {
+		af, ok := actual.(float64)
+		if !ok {
+			return fmt.Errorf("%v is not a float64", actual)
+		}
+		ef, err := strconv.ParseFloat(raw, 64)
+		if err != nil {
+			return err
+		}
+
+		if ef != af {
+			return fmt.Errorf("expected %v, but got %v", ef, af)
+		}
+
+		return nil
+	})
+	assist.RegisterParser(float64(0.0), func(raw string) (interface{}, error) {
+		return strconv.ParseFloat(raw, 64)
+	})
+
 	cfg := featureConfig{}
 
 	features, err := func(fs ...feature) ([]feature, error) {
@@ -39,6 +60,8 @@ func TestEndToEnd(t *testing.T) {
 		return features, nil
 	}(
 		&consumerFeature{},
+		&restaurantFeature{},
+		&orderFeature{},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -46,6 +69,7 @@ func TestEndToEnd(t *testing.T) {
 
 	featurePaths := []string{
 		"features/consumers",
+		"features/orders",
 	}
 
 	suite := godog.TestSuite{

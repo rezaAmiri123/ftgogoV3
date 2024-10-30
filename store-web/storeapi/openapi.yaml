@@ -1,0 +1,133 @@
+openapi: "3.0.0"
+info:
+  version: "1.0.0"
+  title: Store Web API
+  description: The Store Web API is part of the FTGOGO demonstration application
+  contact:
+    name: FTGOGO Issues
+    url: https://github.com/rezaAmiri123/ftgogoV3/issues
+servers:
+  - url: http://{host}:{port}/store/v1
+    variables:
+      host:
+        default: localhost
+      port:
+        default: "8000"
+paths:
+  /restaurants:
+    post:
+      operationId: createRestaurant
+      requestBody:
+        description: create restaurant request
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, address]
+              properties:
+                name:
+                  type: string
+                address:
+                  $ref: '#/components/schemas/Address'
+      responses:
+        '201':
+          $ref: '#/components/responses/RestaurantIDResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+  /restaurants/{restaurantID}/menu:
+    PUT:
+      operationId: updateRestaurantMenu
+      parameters:
+        - $ref: '#/components/parameters/RestaurantID'
+      requestBody:
+        description: update restaurant menu request
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [menu]
+              properties:
+                menu:
+                  type: object
+                  required: [menu_items]
+                  properties:
+                    menu_items:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/MenuItem'
+      responses:
+        '200':
+          $ref: '#/components/responses/EmptyResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+security:
+  - { }
+  - bearerAuth: [ ]
+
+components:  
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Address:
+      type: object
+      required: [street1, city, state, zip]
+      properties:
+        street1:
+          type: string
+        street2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+    MenuItem:
+      type: object
+      required: [ id, name, price ]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: integer
+  parameters:
+    RestaurantID:
+      in: path
+      name: restaurantID
+      description: restaurant id (uuid)
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    EmptyResponse:
+      description: No Content
+    ErrorResponse:
+      description: Unexpected Error
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [message]
+            properties:
+              message:
+                type: string
+    RestaurantIDResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ id ]
+            properties:
+              id:
+                type: string
+ 
