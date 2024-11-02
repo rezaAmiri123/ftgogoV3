@@ -11,6 +11,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rezaAmiri123/ftgogoV3/consumer/internal/domain"
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -96,7 +97,7 @@ func (c *consumerSuite) SetupTest() {
 }
 func (c *consumerSuite) TestConsumerReopsitory_Save() {
 	err := c.repo.Save(context.Background(), &domain.Consumer{
-		ID:        "id",
+		AggregateBase: ddd.AggregateBase{ID: "id"},
 		Name:      "name",
 		Addresses: map[string]domain.Address{"address-id": domain.Address{Street1: "street"}},
 	})
@@ -111,7 +112,7 @@ func (c *consumerSuite) TestConsumerReopsitory_Save() {
 
 func (c *consumerSuite) TestConsumerReopsitory_Find() {
 	err := c.repo.Save(context.Background(), &domain.Consumer{
-		ID:        "id",
+		AggregateBase: ddd.AggregateBase{ID: "id"},
 		Name:      "name",
 		Addresses: map[string]domain.Address{"address-id": domain.Address{Street1: "street"}},
 	})
@@ -126,13 +127,13 @@ func (c *consumerSuite) TestConsumerReopsitory_Find() {
 
 func (c *consumerSuite) TestConsumerReopsitory_Update() {
 	err := c.repo.Save(context.Background(), &domain.Consumer{
-		ID:        "id",
+		AggregateBase: ddd.AggregateBase{ID: "id"},
 		Name:      "name",
 		Addresses: map[string]domain.Address{"address-id": domain.Address{Street1: "street"}},
 	})
 	c.NoError(err)
 	err = c.repo.Update(context.Background(),&domain.Consumer{
-		ID: "id",
+		AggregateBase: ddd.AggregateBase{ID: "id"},
 		Name: "changed",
 		Addresses: map[string]domain.Address{},
 	})

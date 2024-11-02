@@ -62,6 +62,7 @@ func TestEndToEnd(t *testing.T) {
 		&consumerFeature{},
 		&restaurantFeature{},
 		&orderFeature{},
+		&kitchenFeature{},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -70,6 +71,7 @@ func TestEndToEnd(t *testing.T) {
 	featurePaths := []string{
 		"features/consumers",
 		"features/orders",
+		"features/kitchens",
 	}
 
 	suite := godog.TestSuite{

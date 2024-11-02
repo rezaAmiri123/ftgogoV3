@@ -46,6 +46,30 @@ func (s server) GetDelivery(ctx context.Context, request *deliverypb.GetDelivery
 	}, nil
 }
 
+func (s server) ScheduleDelivery(ctx context.Context, request *deliverypb.ScheduleDeliveryRequest) (*deliverypb.ScheduleDeliveryResponse, error) {
+	err := s.app.ScheduleDelivery(ctx, commands.ScheduleDelivery{
+		ID:      request.GetID(),
+		ReadyBy: request.ReadyBy.AsTime(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &deliverypb.ScheduleDeliveryResponse{}, nil
+}
+
+func (s server) SetCourierAvailability(ctx context.Context, request *deliverypb.SetCourierAvailabilityRequest) (*deliverypb.SetCourierAvailabilityResponse, error) {
+	err := s.app.SetCourierAvailability(ctx, commands.SetCourierAvailability{
+		CourierID: request.GetCourierID(),
+		Available: request.GetAvailable(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &deliverypb.SetCourierAvailabilityResponse{
+		Available: request.Available,
+	}, nil
+}
+
 func (s server) toAddressDomain(address *deliverypb.Address) domain.Address {
 	return domain.Address{
 		Street1: address.Street1,

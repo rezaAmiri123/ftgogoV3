@@ -57,6 +57,17 @@ func (s server) ConfirmCreateTicket(ctx context.Context, request *kitchenpb.Conf
 	return &kitchenpb.ConfirmCreateTicketResponse{}, nil
 }
 
+func (s server) AcceptTicket(ctx context.Context, request *kitchenpb.AcceptTicketRequest) (*kitchenpb.AcceptTicketResponse, error) {
+	err := s.app.AcceptTicket(ctx, commands.AcceptTicket{
+		ID:      request.GetTicketID(),
+		ReadyBy: request.ReadyBy.AsTime(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &kitchenpb.AcceptTicketResponse{TicketID: request.GetTicketID()}, nil
+}
+
 func (s server) toLineItemsDomain(lineItems []*kitchenpb.LineItem) []domain.LineItem {
 	response := make([]domain.LineItem, 0, len(lineItems))
 	for _, lineItem := range lineItems {

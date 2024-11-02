@@ -15,6 +15,7 @@ type (
 	Commands interface {
 		CreateRestaurant(ctx context.Context, cmd commands.CreateRestaurant) (string, error)
 		UpdateRestaurantMenu(ctx context.Context, cmd commands.UpdateRestaurantMenu) error
+		AcceptTicket(ctx context.Context, cmd commands.AcceptTicket) error
 	}
 	Queries interface {
 	}
@@ -26,6 +27,7 @@ type (
 	appCommands struct {
 		commands.CreateRestaurantHandler
 		commands.UpdateRestaurantMenuHandler
+		commands.AcceptTicketHandler
 	}
 	appQueries struct {
 	}
@@ -33,11 +35,12 @@ type (
 
 var _ App = (*Application)(nil)
 
-func New(restaurants domain.RestaurantRepository) *Application {
+func New(restaurants domain.RestaurantRepository, kitchens domain.KitchenRepository) *Application {
 	return &Application{
 		appCommands: appCommands{
 			CreateRestaurantHandler:     commands.NewCreateRestaurantHandler(restaurants),
 			UpdateRestaurantMenuHandler: commands.NewUpdateRestaurantMenuHandler(restaurants),
+			AcceptTicketHandler:         commands.NewAcceptTicketHandler(kitchens),
 		},
 		appQueries: appQueries{},
 	}

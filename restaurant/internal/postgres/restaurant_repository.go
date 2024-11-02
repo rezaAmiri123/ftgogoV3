@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/restaurant/internal/domain"
 	"github.com/stackus/errors"
 )
@@ -44,7 +45,7 @@ func (r RestaurantRepository) Find(ctx context.Context, restaurantID string) (*d
 	const query = "SELECT name, address, menu_items from %s where id = $1 LIMIT 1"
 
 	restaurant := &domain.Restaurant{
-		ID: restaurantID,
+		AggregateBase: ddd.AggregateBase{ID: restaurantID},
 	}
 
 	var address []byte

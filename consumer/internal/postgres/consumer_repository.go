@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/rezaAmiri123/ftgogoV3/consumer/internal/domain"
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stackus/errors"
 )
 
@@ -40,7 +41,7 @@ func (r ConsumerReopsitory) Find(ctx context.Context, consumerID string) (*domai
 	const query = "SELECT name, addresses from %s where id = $1 LIMIT 1"
 
 	consumer := &domain.Consumer{
-		ID: consumerID,
+		AggregateBase: ddd.AggregateBase{ID: consumerID},
 	}
 
 	var addresses []byte

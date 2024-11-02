@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/rezaAmiri123/ftgogoV3/accounting/internal/domain"
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 )
 
 type AccountReopsitory struct {
@@ -34,7 +35,7 @@ func (r AccountReopsitory) Find(ctx context.Context, accountID string) (*domain.
 	const query = "SELECT name, enabled from %s where id = $1 LIMIT 1"
 
 	account := &domain.Account{
-		ID: accountID,
+		AggregateBase: ddd.AggregateBase{ID: accountID},
 	}
 
 	err := r.db.QueryRowContext(ctx, r.table(query), accountID).Scan(
@@ -45,10 +46,10 @@ func (r AccountReopsitory) Find(ctx context.Context, accountID string) (*domain.
 	return account, err
 }
 
-func(r AccountReopsitory)Update(ctx context.Context,account *domain.Account)error{
+func (r AccountReopsitory) Update(ctx context.Context, account *domain.Account) error {
 	const query = "UPDATE %s SET name = $2, enabled = $3 WHERE id = $1"
 
-	_, err := r.db.ExecContext(ctx,r.table(query), account.ID,account.Name,account.Enabled)
+	_, err := r.db.ExecContext(ctx, r.table(query), account.ID, account.Name, account.Enabled)
 
 	return err
 }

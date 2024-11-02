@@ -58,8 +58,14 @@ func (s *Server) Mount() http.Handler {
 			r.Route("/{restaurantID}", func(r chi.Router) {
 				r.Put("/menu", s.withRestaurantID(s.UpdateRestaurantMenu))
 			})
-
 		})
+
+		r.Route("/tickets", func(r chi.Router) {
+			r.Route("/{ticketID}", func(r chi.Router) {
+				r.Post("/accept", s.withTicketID(s.AcceptTicket))
+			})
+		})
+
 
 	})
 	return s.router
@@ -182,6 +188,41 @@ func (s Server) UpdateRestaurantMenu(w http.ResponseWriter, r *http.Request, res
 		return
 	}
 }
+
+func (s Server) withTicketID(next func(http.ResponseWriter, *http.Request, storeapi.TicketID)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		restaurantID, err := uuid.Parse(chi.URLParam(r, "ticketID"))
+		if err != nil {
+			render.Render(w, r, web.NewErrorResponse(err))
+			return
+		}
+		next(w, r, storeapi.RestaurantID(restaurantID))
+	}
+}
+func (s Server) AcceptTicket(w http.ResponseWriter, r *http.Request, ticketID storeapi.TicketID) {
+	var request storeapi.AcceptTicketJSONRequestBody
+	err := render.Decode(r, &request)
+	if err != nil {
+		render.Render(w, r, web.NewErrorResponse(err))
+		return
+	}
+
+	err = s.app.AcceptTicket(r.Context(), commands.AcceptTicket{
+		ID: ticketID.String(),
+		ReadyBy: request.ReadyBy,	
+	})
+	if err != nil {
+		render.Render(w, r, web.NewErrorResponse(err))
+		return
+	}
+
+	render.Status(r, http.StatusAccepted)
+	render.Respond(w, r, storeapi.TicketIDResponse{
+		Id: ticketID.String(),
+	})
+
+}
+
 
 func (s Server) toMenuItemsDomain(request []storeapi.MenuItem) []domain.MenuItem {
 	menuItems := make([]domain.MenuItem, len(request))

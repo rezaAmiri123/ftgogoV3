@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/rezaAmiri123/ftgogoV3/consumer/internal/domain"
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 )
 
 type (
@@ -34,8 +35,8 @@ type (
 	}
 
 	Application struct {
-		consumers domain.ConsumerRepository
-		accounts  domain.AccountRepository
+		consumers       domain.ConsumerRepository
+		domainPublisher ddd.EventPublisher
 	}
 )
 
@@ -51,10 +52,13 @@ type App interface {
 
 var _ App = (*Application)(nil)
 
-func New(consumers domain.ConsumerRepository, accounts domain.AccountRepository) *Application {
+func New(
+	consumers domain.ConsumerRepository,
+	domainPublisher ddd.EventPublisher,
+) *Application {
 	return &Application{
-		consumers: consumers,
-		accounts:  accounts,
+		consumers:       consumers,
+		domainPublisher: domainPublisher,
 	}
 }
 
@@ -64,15 +68,13 @@ func (a Application) RegisterConsumer(ctx context.Context, register RegisterCons
 		return err
 	}
 
-	err = a.accounts.CreateAccount(ctx, domain.CreateAccount{
-		ID:   consumer.ID,
-		Name: consumer.Name,
-	})
+	// publishe domain events
+	err = a.consumers.Save(ctx, consumer)
 	if err != nil {
 		return err
 	}
 
-	return a.consumers.Save(ctx, consumer)
+	return a.domainPublisher.Publish(ctx, consumer.GetEvents()...)
 }
 
 func (a Application) GetConsumer(ctx context.Context, get GetConsumer) (*domain.Consumer, error) {

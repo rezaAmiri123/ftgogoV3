@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/domain"
 )
 
@@ -17,11 +18,12 @@ type CreateOrder struct {
 }
 
 type CreateOrderHandler struct {
-	orders      domain.OrderRepository
-	restaurants domain.RestaurantRepository
-	consumers   domain.ConsumerRepository
-	kitchens    domain.KitchenRepository
-	accounts    domain.AccountRepository
+	orders         domain.OrderRepository
+	restaurants    domain.RestaurantRepository
+	consumers      domain.ConsumerRepository
+	kitchens       domain.KitchenRepository
+	accounts       domain.AccountRepository
+	domainPubliser ddd.EventPublisher
 }
 
 func NewCreateOrderHandler(
@@ -30,13 +32,15 @@ func NewCreateOrderHandler(
 	consumers domain.ConsumerRepository,
 	kitchens domain.KitchenRepository,
 	accounts domain.AccountRepository,
+	domainPubliser ddd.EventPublisher,
 ) CreateOrderHandler {
 	return CreateOrderHandler{
-		orders:      orders,
-		restaurants: restaurants,
-		consumers:   consumers,
-		kitchens:    kitchens,
-		accounts:    accounts,
+		orders:         orders,
+		restaurants:    restaurants,
+		consumers:      consumers,
+		kitchens:       kitchens,
+		accounts:       accounts,
+		domainPubliser: domainPubliser,
 	}
 }
 
@@ -85,7 +89,7 @@ func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) er
 	}
 
 	// Confirm Create ticket
-	err = h.kitchens.ConfirmCreateTicket(ctx,order.ID) 
+	err = h.kitchens.ConfirmCreateTicket(ctx, order.ID)
 	if err != nil {
 		return err
 	}
@@ -96,5 +100,9 @@ func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) er
 		return err
 	}
 
-	return h.orders.Save(ctx, order)
+	err = h.orders.Save(ctx, order)
+	if err != nil {
+		return err
+	}
+	return h.domainPubliser.Publish(ctx, order.GetEvents()...)
 }

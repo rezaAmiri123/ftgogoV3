@@ -14,6 +14,7 @@ type Module struct{}
 
 func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 	deliveries := postgres.NewDeliveryRepository("delivery.deliveries", mono.DB())
+	couriers := postgres.NewCourierRepository("delivery.couriers", mono.DB())
 	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
 	if err != nil {
 		return err
@@ -22,7 +23,7 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 	restaurants := grpc.NewRestaurantRepository(conn)
 
 	var app application.App
-	app = application.New(deliveries, restaurants)
+	app = application.New(deliveries, couriers, restaurants)
 	app = logging.LogApplicationAccess(app, mono.Logger())
 
 	if err := grpc.RegisterServer(app, mono.RPC()); err != nil {

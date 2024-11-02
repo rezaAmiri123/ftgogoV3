@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/rezaAmiri123/ftgogoV3/delivery/internal/domain"
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stackus/errors"
 )
 
@@ -59,7 +60,7 @@ func (r DeliveryRepository) Find(ctx context.Context, deliveryID string) (*domai
 	from %s where id = $1 LIMIT 1`
 
 	delivery := &domain.Delivery{
-		ID: deliveryID,
+		AggregateBase: ddd.AggregateBase{ID: deliveryID},
 	}
 
 	var pickUpAddress []byte

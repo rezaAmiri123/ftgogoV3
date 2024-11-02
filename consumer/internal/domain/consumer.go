@@ -1,6 +1,9 @@
 package domain
 
-import "github.com/stackus/errors"
+import (
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
+	"github.com/stackus/errors"
+)
 
 var (
 	ErrConsumerIDCannotBeBlank   = errors.Wrap(errors.ErrBadRequest, "the consumer id cannot be blank")
@@ -9,7 +12,7 @@ var (
 )
 
 type Consumer struct {
-	ID        string
+	ddd.AggregateBase
 	Name      string
 	Addresses map[string]Address
 }
@@ -22,11 +25,17 @@ func RegisterConsumer(id, name string) (*Consumer, error) {
 		return nil, ErrConsumerNameCannotBeBlank
 	}
 
-	return &Consumer{
-		ID:        id,
-		Name:      name,
-		Addresses: make(map[string]Address),
-	}, nil
+	consumer := &Consumer{
+		AggregateBase: ddd.AggregateBase{ID: id},
+		Name:          name,
+		Addresses:     make(map[string]Address),
+	}
+
+	consumer.AddEvent(&ConsumerRegistered{
+		Consumer: consumer,
+	})
+	
+	return consumer, nil
 }
 
 func (c *Consumer) UpdateAddress(id string, address Address) error {

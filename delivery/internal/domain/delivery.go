@@ -3,6 +3,7 @@ package domain
 import (
 	"time"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stackus/errors"
 )
 
@@ -14,7 +15,7 @@ var (
 )
 
 type Delivery struct {
-	ID                string
+	ddd.AggregateBase
 	RestaurantID      string
 	AssignedCourierID string
 	PickUpAddress     Address
@@ -39,7 +40,7 @@ func CreateDelivery(id, restaurantID string, pickUpAddress, deliveryAddress Addr
 	}
 
 	delivery := &Delivery{
-		ID:                id,
+		AggregateBase:     ddd.AggregateBase{ID: id},
 		RestaurantID:      restaurantID,
 		AssignedCourierID: "",
 		PickUpAddress:     pickUpAddress,

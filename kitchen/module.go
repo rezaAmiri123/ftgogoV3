@@ -3,25 +3,43 @@ package kitchen
 import (
 	"context"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
+	"github.com/rezaAmiri123/ftgogoV3/internal/monolith"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/grpc"
+	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/handlers"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/logging"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/postgres"
-	"github.com/rezaAmiri123/ftgogoV3/internal/monolith"
 )
 
 type Module struct{}
 
-func(m Module)Startup(ctx context.Context, mono monolith.Monolith)error{
+func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
+	// setup Driven adapters
+	domainDispatcher := ddd.NewEventDispatcher()
 	tickets := postgres.NewTicketReopsitory("kitchen.tickets", mono.DB())
-
-	var app application.App
-	app = application.New(tickets)
-	app = logging.LogApplicationAccess(app,mono.Logger())
-
-	if err := grpc.RegisterServer(app,mono.RPC());err!= nil{
+	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
+	if err != nil {
 		return err
 	}
+	deliveries := grpc.NewDeliveryRepository(conn)
+
+	// setup application
+	var app application.App
+	app = application.New(tickets, domainDispatcher)
+	app = logging.LogApplicationAccess(app, mono.Logger())
+
+	// setup application handlers
+	deliveryHandlers := logging.LogDomainEventHandlerAccess(
+		application.NewDeliveryHandlers(deliveries),
+		mono.Logger(),
+	)
+
+	// setup Driver adapters
+	if err := grpc.RegisterServer(app, mono.RPC()); err != nil {
+		return err
+	}
+	handlers.RegisterDeliveryHandlers(deliveryHandlers, domainDispatcher)
 
 	return nil
 }

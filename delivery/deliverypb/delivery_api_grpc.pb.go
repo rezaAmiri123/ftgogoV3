@@ -19,8 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	DeliveryService_CreateDelivery_FullMethodName = "/deliverypb.DeliveryService/CreateDelivery"
-	DeliveryService_GetDelivery_FullMethodName    = "/deliverypb.DeliveryService/GetDelivery"
+	DeliveryService_CreateDelivery_FullMethodName         = "/deliverypb.DeliveryService/CreateDelivery"
+	DeliveryService_GetDelivery_FullMethodName            = "/deliverypb.DeliveryService/GetDelivery"
+	DeliveryService_SetCourierAvailability_FullMethodName = "/deliverypb.DeliveryService/SetCourierAvailability"
+	DeliveryService_ScheduleDelivery_FullMethodName       = "/deliverypb.DeliveryService/ScheduleDelivery"
 )
 
 // DeliveryServiceClient is the client API for DeliveryService service.
@@ -29,6 +31,8 @@ const (
 type DeliveryServiceClient interface {
 	CreateDelivery(ctx context.Context, in *CreateDeliveryRequest, opts ...grpc.CallOption) (*CreateDeliveryResponse, error)
 	GetDelivery(ctx context.Context, in *GetDeliveryRequest, opts ...grpc.CallOption) (*GetDeliveryResponse, error)
+	SetCourierAvailability(ctx context.Context, in *SetCourierAvailabilityRequest, opts ...grpc.CallOption) (*SetCourierAvailabilityResponse, error)
+	ScheduleDelivery(ctx context.Context, in *ScheduleDeliveryRequest, opts ...grpc.CallOption) (*ScheduleDeliveryResponse, error)
 }
 
 type deliveryServiceClient struct {
@@ -57,12 +61,32 @@ func (c *deliveryServiceClient) GetDelivery(ctx context.Context, in *GetDelivery
 	return out, nil
 }
 
+func (c *deliveryServiceClient) SetCourierAvailability(ctx context.Context, in *SetCourierAvailabilityRequest, opts ...grpc.CallOption) (*SetCourierAvailabilityResponse, error) {
+	out := new(SetCourierAvailabilityResponse)
+	err := c.cc.Invoke(ctx, DeliveryService_SetCourierAvailability_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *deliveryServiceClient) ScheduleDelivery(ctx context.Context, in *ScheduleDeliveryRequest, opts ...grpc.CallOption) (*ScheduleDeliveryResponse, error) {
+	out := new(ScheduleDeliveryResponse)
+	err := c.cc.Invoke(ctx, DeliveryService_ScheduleDelivery_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DeliveryServiceServer is the server API for DeliveryService service.
 // All implementations must embed UnimplementedDeliveryServiceServer
 // for forward compatibility
 type DeliveryServiceServer interface {
 	CreateDelivery(context.Context, *CreateDeliveryRequest) (*CreateDeliveryResponse, error)
 	GetDelivery(context.Context, *GetDeliveryRequest) (*GetDeliveryResponse, error)
+	SetCourierAvailability(context.Context, *SetCourierAvailabilityRequest) (*SetCourierAvailabilityResponse, error)
+	ScheduleDelivery(context.Context, *ScheduleDeliveryRequest) (*ScheduleDeliveryResponse, error)
 	mustEmbedUnimplementedDeliveryServiceServer()
 }
 
@@ -75,6 +99,12 @@ func (UnimplementedDeliveryServiceServer) CreateDelivery(context.Context, *Creat
 }
 func (UnimplementedDeliveryServiceServer) GetDelivery(context.Context, *GetDeliveryRequest) (*GetDeliveryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDelivery not implemented")
+}
+func (UnimplementedDeliveryServiceServer) SetCourierAvailability(context.Context, *SetCourierAvailabilityRequest) (*SetCourierAvailabilityResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetCourierAvailability not implemented")
+}
+func (UnimplementedDeliveryServiceServer) ScheduleDelivery(context.Context, *ScheduleDeliveryRequest) (*ScheduleDeliveryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ScheduleDelivery not implemented")
 }
 func (UnimplementedDeliveryServiceServer) mustEmbedUnimplementedDeliveryServiceServer() {}
 
@@ -125,6 +155,42 @@ func _DeliveryService_GetDelivery_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DeliveryService_SetCourierAvailability_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetCourierAvailabilityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeliveryServiceServer).SetCourierAvailability(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DeliveryService_SetCourierAvailability_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeliveryServiceServer).SetCourierAvailability(ctx, req.(*SetCourierAvailabilityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DeliveryService_ScheduleDelivery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ScheduleDeliveryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeliveryServiceServer).ScheduleDelivery(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DeliveryService_ScheduleDelivery_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeliveryServiceServer).ScheduleDelivery(ctx, req.(*ScheduleDeliveryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DeliveryService_ServiceDesc is the grpc.ServiceDesc for DeliveryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +205,14 @@ var DeliveryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDelivery",
 			Handler:    _DeliveryService_GetDelivery_Handler,
+		},
+		{
+			MethodName: "SetCourierAvailability",
+			Handler:    _DeliveryService_SetCourierAvailability_Handler,
+		},
+		{
+			MethodName: "ScheduleDelivery",
+			Handler:    _DeliveryService_ScheduleDelivery_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

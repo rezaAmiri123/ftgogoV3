@@ -25,3 +25,5 @@ pprof-heap:
 
 pprof-goroutine:
 	go tool pprof -http localhost:9090 http://localhost:6060/debug/pprof/goroutine?debug=1
+test:
+	go test ./... -count 1

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/domain"
 	"github.com/stackus/errors"
 )
@@ -56,7 +57,7 @@ func (r OrderRepository) Find(ctx context.Context, orderID string) (*domain.Orde
 	from %s where id = $1 LIMIT 1`
 
 	order := &domain.Order{
-		ID: orderID,
+		AggregateBase: ddd.AggregateBase{ID: orderID},
 	}
 
 	var lineItems []byte

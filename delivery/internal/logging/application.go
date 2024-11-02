@@ -35,3 +35,15 @@ func (a Application) GetDelivery(ctx context.Context, query queries.GetDelivery)
 	defer func() { a.logger.Info().Err(err).Msg("<--delivery.GetDelivery") }()
 	return a.App.GetDelivery(ctx, query)
 }
+
+func (a Application) SetCourierAvailability(ctx context.Context, cmd commands.SetCourierAvailability) (err error) {
+	a.logger.Info().Msg("-->delivery.SetCourierAvailability")
+	defer func() { a.logger.Info().Err(err).Msg("<--delivery.SetCourierAvailability") }()
+	return a.App.SetCourierAvailability(ctx, cmd)
+}
+
+func (a Application) ScheduleDelivery(ctx context.Context, cmd commands.ScheduleDelivery) (err error) {
+	a.logger.Info().Msg("-->delivery.ScheduleDelivery")
+	defer func() { a.logger.Info().Err(err).Msg("<--delivery.ScheduleDelivery") }()
+	return a.App.ScheduleDelivery(ctx, cmd)
+}

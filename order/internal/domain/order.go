@@ -3,11 +3,12 @@ package domain
 import (
 	"time"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stackus/errors"
 )
 
 type Order struct {
-	ID           string
+	ddd.AggregateBase
 	ConsumerID   string
 	RestaurantID string
 	TicketID     string
@@ -48,14 +49,16 @@ func CreateOrder(id, consumerID, restaurantID string, lineItems []LineItem, deli
 	}
 
 	order := &Order{
-		ID:           id,
-		ConsumerID:   consumerID,
-		RestaurantID: restaurantID,
-		LineItems:    lineItems,
-		Status:       ApprovalPending,
-		DeliverAt:    deliverAt,
-		DeliverTo:    deliverTo,
+		AggregateBase: ddd.AggregateBase{ID: id},
+		ConsumerID:    consumerID,
+		RestaurantID:  restaurantID,
+		LineItems:     lineItems,
+		Status:        ApprovalPending,
+		DeliverAt:     deliverAt,
+		DeliverTo:     deliverTo,
 	}
+
+	order.AddEvent(&OrderCreated{Order: order})
 
 	return order, nil
 }

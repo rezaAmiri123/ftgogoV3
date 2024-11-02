@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/domain"
 	"github.com/stackus/errors"
 )
@@ -48,7 +49,7 @@ func (r TicketReopsitory) Find(ctx context.Context, ticketID string) (*domain.Ti
 	from %s where id = $1 LIMIT 1`
 
 	ticket := &domain.Ticket{
-		ID: ticketID,
+		AggregateBase: ddd.AggregateBase{ID: ticketID},
 	}
 
 	var lineItems []byte

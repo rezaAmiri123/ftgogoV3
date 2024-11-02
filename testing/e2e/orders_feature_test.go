@@ -7,6 +7,7 @@ import (
 
 	"github.com/cucumber/godog"
 	"github.com/rezaAmiri123/ftgogoV3/customer-web/customerapi"
+	"github.com/stackus/errors"
 )
 
 type orderIDKey struct{}
@@ -66,7 +67,7 @@ func (f *orderFeature) iCreateANewOrder(ctx context.Context) context.Context {
 	if err != nil {
 		return ctx
 	}
-	return ctx
+	return context.WithValue(ctx, orderIDKey{}, resp.JSON201.Id)
 }
 
 func (f *orderFeature) iExpectTheOrderIsCreated(ctx context.Context) error {
@@ -78,4 +79,12 @@ func (f *orderFeature) iExpectTheOrderIsCreated(ctx context.Context) error {
 
 func (f *orderFeature) noOrderForRegisteredConsumerExists(ctx context.Context) context.Context {
 	return ctx
+}
+
+func lastOrderID(ctx context.Context) (string, error) {
+	v := ctx.Value(orderIDKey{})
+	if v == nil {
+		return "", errors.ErrNotFound.Msg("no order ID to work with")
+	}
+	return v.(string), nil
 }

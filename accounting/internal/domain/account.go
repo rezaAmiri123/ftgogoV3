@@ -1,6 +1,9 @@
 package domain
 
-import "github.com/stackus/errors"
+import (
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
+	"github.com/stackus/errors"
+)
 
 var (
 	ErrAccountIDCannotBeBlank   = errors.Wrap(errors.ErrBadRequest, "the account id cannot be blank")
@@ -11,7 +14,7 @@ var (
 )
 
 type Account struct {
-	ID      string
+	ddd.AggregateBase
 	Name    string
 	Enabled bool
 }
@@ -24,11 +27,13 @@ func RegisterAccount(id, name string) (*Account, error) {
 		return nil, ErrAccountNameCannotBeBlank
 	}
 
-	return &Account{
-		ID:      id,
-		Name:    name,
-		Enabled: true,
-	}, nil
+	account := &Account{
+		AggregateBase: ddd.AggregateBase{ID: id},
+		Name:          name,
+		Enabled:       true,
+	}
+
+	return account, nil
 }
 
 func (a *Account) Enable() error {

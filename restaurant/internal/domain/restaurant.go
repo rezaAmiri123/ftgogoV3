@@ -1,6 +1,9 @@
 package domain
 
-import "github.com/stackus/errors"
+import (
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
+	"github.com/stackus/errors"
+)
 
 var (
 	ErrRestaurantIDCannotBeBlank      = errors.Wrap(errors.ErrBadRequest, "the restaurant id cannot be blank")
@@ -10,7 +13,7 @@ var (
 )
 
 type Restaurant struct {
-	ID        string
+	ddd.AggregateBase
 	Name      string
 	Address   Address
 	MenuItems map[string]MenuItem
@@ -26,12 +29,13 @@ func CreateRestaurant(id, name string, address Address) (*Restaurant, error) {
 	if address == (Address{}) {
 		return nil, ErrRestaurantAddressCannotBeBlank
 	}
-	return &Restaurant{
-		ID:        id,
-		Name:      name,
-		Address:   address,
-		MenuItems: make(map[string]MenuItem),
-	}, nil
+	restaurant := &Restaurant{
+		AggregateBase: ddd.AggregateBase{ID: id},
+		Name:          name,
+		Address:       address,
+		MenuItems:     make(map[string]MenuItem),
+	}
+	return restaurant, nil
 }
 
 func (r *Restaurant) FindMenuItem(menuItemID string) (MenuItem, error) {

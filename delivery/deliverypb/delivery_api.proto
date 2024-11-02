@@ -8,6 +8,8 @@ import "google/protobuf/timestamp.proto";
 service DeliveryService {
   rpc CreateDelivery(CreateDeliveryRequest) returns (CreateDeliveryResponse);
   rpc GetDelivery(GetDeliveryRequest) returns (GetDeliveryResponse);
+  rpc SetCourierAvailability(SetCourierAvailabilityRequest) returns (SetCourierAvailabilityResponse);
+  rpc ScheduleDelivery(ScheduleDeliveryRequest) returns (ScheduleDeliveryResponse);
 }
 
 message Delivery {
@@ -44,3 +46,19 @@ message Address {
   string State = 4;
   string Zip = 5;
 }
+
+message SetCourierAvailabilityRequest {
+  string CourierID = 1;
+  bool Available = 2;
+}
+
+message SetCourierAvailabilityResponse {
+  bool Available = 1;
+}
+
+message ScheduleDeliveryRequest{
+  string ID =1;
+  google.protobuf.Timestamp ReadyBy = 2;
+}
+
+message ScheduleDeliveryResponse{}

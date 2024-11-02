@@ -3,6 +3,7 @@ package domain
 import (
 	"time"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stackus/errors"
 )
 
@@ -11,10 +12,11 @@ var (
 	ErrRestaurantIDCannotBeBlank = errors.Wrap(errors.ErrBadRequest, "the restaurant id cannot be blank")
 	ErrLineItemsCannotBeEmpty    = errors.Wrap(errors.ErrBadRequest, "the line items cannot be empty")
 	ErrTicketInvalidState        = errors.Wrap(errors.ErrFailedPrecondition, "ticket status does not allow action")
+	ErrTicketReadyByBeforeNow    = errors.Wrap(errors.ErrInvalidArgument, "readyBy is in the past")
 )
 
 type Ticket struct {
-	ID               string
+	ddd.AggregateBase
 	RestaurantID     string
 	LineItems        []LineItem
 	ReadyBy          time.Time
@@ -36,12 +38,14 @@ func CreateTicket(id, restaurantID string, lineItems []LineItem) (*Ticket, error
 	if len(lineItems) == 0 {
 		return nil, ErrLineItemsCannotBeEmpty
 	}
-	return &Ticket{
-		ID:           id,
-		RestaurantID: restaurantID,
-		LineItems:    lineItems,
-		Status:       CreatePending,
-	}, nil
+	ticket := &Ticket{
+		AggregateBase: ddd.AggregateBase{ID: id},
+		RestaurantID:  restaurantID,
+		LineItems:     lineItems,
+		Status:        CreatePending,
+	}
+
+	return ticket, nil
 }
 
 func (t *Ticket) ConfirmCreate() error {
@@ -49,5 +53,23 @@ func (t *Ticket) ConfirmCreate() error {
 		return ErrTicketInvalidState
 	}
 	t.Status = AwaitingAcceptance
+	return nil
+}
+
+func (t *Ticket) Accpept(readyBy time.Time) error {
+	if t.Status != AwaitingAcceptance {
+		return ErrTicketInvalidState
+	}
+	if time.Now().After(readyBy) {
+		return ErrTicketReadyByBeforeNow
+	}
+	t.AcceptedAt = time.Now()
+	t.ReadyBy = readyBy
+	t.Status = Accepted // assume that this is the case; doesn't appear to be ever set in ftgo-kitchen-service
+
+	t.AddEvent(&TicketAccepted{
+		Ticket: t,
+	})
+	
 	return nil
 }

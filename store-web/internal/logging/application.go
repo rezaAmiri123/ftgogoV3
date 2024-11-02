@@ -28,3 +28,8 @@ func (a Application) CreateRestaurant(ctx context.Context, cmd commands.CreateRe
 	return a.App.CreateRestaurant(ctx, cmd)
 }
 
+func (a Application) AcceptTicket(ctx context.Context, cmd commands.AcceptTicket) (err error) {
+	a.logger.Info().Msg("-->store-web.AcceptTicket")
+	defer func() { a.logger.Info().Err(err).Msg("<--store-web.AcceptTicket") }()
+	return a.App.AcceptTicket(ctx, cmd)
+}

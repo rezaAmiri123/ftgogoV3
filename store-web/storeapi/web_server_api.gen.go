@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
@@ -45,6 +46,9 @@ type MenuItem struct {
 // RestaurantID defines model for RestaurantID.
 type RestaurantID = openapi_types.UUID
 
+// TicketID defines model for TicketID.
+type TicketID = openapi_types.UUID
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Message string `json:"message"`
@@ -52,6 +56,11 @@ type ErrorResponse struct {
 
 // RestaurantIDResponse defines model for RestaurantIDResponse.
 type RestaurantIDResponse struct {
+	Id string `json:"id"`
+}
+
+// TicketIDResponse defines model for TicketIDResponse.
+type TicketIDResponse struct {
 	Id string `json:"id"`
 }
 
@@ -68,11 +77,19 @@ type UpdateRestaurantMenuJSONBody struct {
 	} `json:"menu"`
 }
 
+// AcceptTicketJSONBody defines parameters for AcceptTicket.
+type AcceptTicketJSONBody struct {
+	ReadyBy time.Time `json:"ready_by"`
+}
+
 // CreateRestaurantJSONRequestBody defines body for CreateRestaurant for application/json ContentType.
 type CreateRestaurantJSONRequestBody CreateRestaurantJSONBody
 
 // UpdateRestaurantMenuJSONRequestBody defines body for UpdateRestaurantMenu for application/json ContentType.
 type UpdateRestaurantMenuJSONRequestBody UpdateRestaurantMenuJSONBody
+
+// AcceptTicketJSONRequestBody defines body for AcceptTicket for application/json ContentType.
+type AcceptTicketJSONRequestBody AcceptTicketJSONBody
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -156,6 +173,11 @@ type ClientInterface interface {
 	UpdateRestaurantMenuWithBody(ctx context.Context, restaurantID RestaurantID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateRestaurantMenu(ctx context.Context, restaurantID RestaurantID, body UpdateRestaurantMenuJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AcceptTicketWithBody request with any body
+	AcceptTicketWithBody(ctx context.Context, ticketID TicketID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AcceptTicket(ctx context.Context, ticketID TicketID, body AcceptTicketJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) CreateRestaurantWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -196,6 +218,30 @@ func (c *Client) UpdateRestaurantMenuWithBody(ctx context.Context, restaurantID 
 
 func (c *Client) UpdateRestaurantMenu(ctx context.Context, restaurantID RestaurantID, body UpdateRestaurantMenuJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateRestaurantMenuRequest(c.Server, restaurantID, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AcceptTicketWithBody(ctx context.Context, ticketID TicketID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAcceptTicketRequestWithBody(c.Server, ticketID, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AcceptTicket(ctx context.Context, ticketID TicketID, body AcceptTicketJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAcceptTicketRequest(c.Server, ticketID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -293,6 +339,53 @@ func NewUpdateRestaurantMenuRequestWithBody(server string, restaurantID Restaura
 	return req, nil
 }
 
+// NewAcceptTicketRequest calls the generic AcceptTicket builder with application/json body
+func NewAcceptTicketRequest(server string, ticketID TicketID, body AcceptTicketJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAcceptTicketRequestWithBody(server, ticketID, "application/json", bodyReader)
+}
+
+// NewAcceptTicketRequestWithBody generates requests for AcceptTicket with any type of body
+func NewAcceptTicketRequestWithBody(server string, ticketID TicketID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "ticketID", runtime.ParamLocationPath, ticketID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/tickets/%s/accept", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -345,6 +438,11 @@ type ClientWithResponsesInterface interface {
 	UpdateRestaurantMenuWithBodyWithResponse(ctx context.Context, restaurantID RestaurantID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRestaurantMenuResponse, error)
 
 	UpdateRestaurantMenuWithResponse(ctx context.Context, restaurantID RestaurantID, body UpdateRestaurantMenuJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRestaurantMenuResponse, error)
+
+	// AcceptTicketWithBodyWithResponse request with any body
+	AcceptTicketWithBodyWithResponse(ctx context.Context, ticketID TicketID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcceptTicketResponse, error)
+
+	AcceptTicketWithResponse(ctx context.Context, ticketID TicketID, body AcceptTicketJSONRequestBody, reqEditors ...RequestEditorFn) (*AcceptTicketResponse, error)
 }
 
 type CreateRestaurantResponse struct {
@@ -392,6 +490,29 @@ func (r UpdateRestaurantMenuResponse) StatusCode() int {
 	return 0
 }
 
+type AcceptTicketResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *TicketIDResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r AcceptTicketResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AcceptTicketResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // CreateRestaurantWithBodyWithResponse request with arbitrary body returning *CreateRestaurantResponse
 func (c *ClientWithResponses) CreateRestaurantWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRestaurantResponse, error) {
 	rsp, err := c.CreateRestaurantWithBody(ctx, contentType, body, reqEditors...)
@@ -424,6 +545,23 @@ func (c *ClientWithResponses) UpdateRestaurantMenuWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseUpdateRestaurantMenuResponse(rsp)
+}
+
+// AcceptTicketWithBodyWithResponse request with arbitrary body returning *AcceptTicketResponse
+func (c *ClientWithResponses) AcceptTicketWithBodyWithResponse(ctx context.Context, ticketID TicketID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcceptTicketResponse, error) {
+	rsp, err := c.AcceptTicketWithBody(ctx, ticketID, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAcceptTicketResponse(rsp)
+}
+
+func (c *ClientWithResponses) AcceptTicketWithResponse(ctx context.Context, ticketID TicketID, body AcceptTicketJSONRequestBody, reqEditors ...RequestEditorFn) (*AcceptTicketResponse, error) {
+	rsp, err := c.AcceptTicket(ctx, ticketID, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAcceptTicketResponse(rsp)
 }
 
 // ParseCreateRestaurantResponse parses an HTTP response from a CreateRestaurantWithResponse call
@@ -485,6 +623,39 @@ func ParseUpdateRestaurantMenuResponse(rsp *http.Response) (*UpdateRestaurantMen
 	return response, nil
 }
 
+// ParseAcceptTicketResponse parses an HTTP response from a AcceptTicketWithResponse call
+func ParseAcceptTicketResponse(rsp *http.Response) (*AcceptTicketResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AcceptTicketResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest TicketIDResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
@@ -493,6 +664,9 @@ type ServerInterface interface {
 
 	// (PUT /restaurants/{restaurantID}/menu)
 	UpdateRestaurantMenu(w http.ResponseWriter, r *http.Request, restaurantID RestaurantID)
+	// Accept a ticket by ID
+	// (POST /tickets/{ticketID}/accept)
+	AcceptTicket(w http.ResponseWriter, r *http.Request, ticketID TicketID)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -506,6 +680,12 @@ func (_ Unimplemented) CreateRestaurant(w http.ResponseWriter, r *http.Request) 
 
 // (PUT /restaurants/{restaurantID}/menu)
 func (_ Unimplemented) UpdateRestaurantMenu(w http.ResponseWriter, r *http.Request, restaurantID RestaurantID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Accept a ticket by ID
+// (POST /tickets/{ticketID}/accept)
+func (_ Unimplemented) AcceptTicket(w http.ResponseWriter, r *http.Request, ticketID TicketID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -554,6 +734,34 @@ func (siw *ServerInterfaceWrapper) UpdateRestaurantMenu(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateRestaurantMenu(w, r, restaurantID)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// AcceptTicket operation middleware
+func (siw *ServerInterfaceWrapper) AcceptTicket(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var err error
+
+	// ------------- Path parameter "ticketID" -------------
+	var ticketID TicketID
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "ticketID", runtime.ParamLocationPath, chi.URLParam(r, "ticketID"), &ticketID)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "ticketID", Err: err})
+		return
+	}
+
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcceptTicket(w, r, ticketID)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -682,6 +890,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/restaurants/{restaurantID}/menu", wrapper.UpdateRestaurantMenu)
 	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/tickets/{ticketID}/accept", wrapper.AcceptTicket)
+	})
 
 	return r
 }
@@ -689,20 +900,22 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xWTY/jNgz9KwbbQwsYo2TmUviW7hfSop3FbqZ7GASFYjOxFrGkUnTQbOD/Xkj+Tjw7",
-	"KXaPc4tFkXwUHx9zgtQU1mjU7CA5gZUkC2Sk8PUBHcuSpObla/+doUtJWVZGQwLUWSOVRT+Vpcp+hhiU",
-	"t1nJOcSgZYGjm8vXEAPhP6UizCBhKjEGl+ZYSJ9ga6iQDAn4YBADH633d0xK76CqKu/srNEOA8A3heXj",
-	"h+bkEuGfJnplNKNmqGJ4Q2RoeDltbMkJpLV7lUrvJz4773wawLJkLBKrOmmBzsldiHCOb1jbY3dx3RVi",
-	"Np8x5bqQMdQHjf9aTBmzKOD0gIfP/x1wq+x5yCq7Cu3978GzzhSCL7KM0LnLrKni40TeGBxLxicshMjz",
-	"r9huJ21flH2+wjZ4XCNrcdTel7XH8AfqcslYXPmgLeknDJZUOrQozbhDmmpCE6X1mehJDA7TkhQfP/ou",
-	"1Ig2KAlpUXLef71tZ+q3TytoeuYj1dZ+yHJmW/da6a1peSbTwLNmkN+u3t2/u4+WzpXoIIaS9o2nS4TY",
-	"Kc7LzU1qCkH4RS4KRWp+eye2vDM789edULXfBZ1WOUYf2RBGn3ATLd4vI+UiK4kjs404x6jJm2FhtGMK",
-	"fI8G3PdVKN57iKM4EMMBydVZ5jezm5lPbixqaRUkcBeO4iBX4QFFL1U1l40L9fu2h0zLDBJ4RSgZ+/Fs",
-	"NA0d/2qy4zeMqOyn6EfCLSTwg+gFWjTzJtphe5psZ4xqyNSGv2bE01BjNBD5psQLAT8X5dvZ/KkCunti",
-	"UtsCiK0s9/x8gLGaV6GCYffEabh1KlGgLn3U9w+ry4aWNhs11M98oEW/DR+nAfVXRiVBtf5enGiBX57+",
-	"rRiLWonaH19jTSdkVdd+SSSPE3uriz0pPOd3r+JT/cRDPnnX/0Gq2RWcGP0d+CY2xWDLicl/eCHKC1HG",
-	"sjPYxL75VTxew49r32GHdGjZ0S/NRIhTbhxXycka4ko4v7zEwf87OUhScrOvi8qbNdTBhL1J5T4ce6oa",
-	"OjP/MpvNPLp19V8AAAD//24cbjbiCwAA",
+	"H4sIAAAAAAAC/+xXTW/jNhD9K8S0hxZQl05yKXRL9wtu0Wax63QPQbCgpbHFrSWyw1FaraH/XpD6dKTE",
+	"XiSHHvZmczjDN3yPM6M9JCa3psCCHcR7sIpUjowU/r1Hx6okVfDylf+foktIW9amgBiotwqdih/KUqc/",
+	"QgTa26ziDCIoVI4HO5evIALCv0tNmELMVGIELskwV/6AjaFcMcTgg0EEXFnv75h0sYW6jmClk79wFg4H",
+	"yzEo3Pk/BUbtnZ01hcNwT69zy9X7dmWK7A8jXpqCsWCoI3hNZGi8OWlt8R6UtTudKO8nPzvvvB/BsmQs",
+	"Euvm0BydU9sQYXpNQ243/cbbPhGz/owJN4kcQr0u8F+LCWMqAk4PeKyCZ8Ct0+OQdXoS2qvfYCSJ/x+2",
+	"uhNVCH6ZpoTOTU9NNFcz50bgWDE+YCFEPnvEdj5r+6Lt8Qy74FGDrMPReE9zj+B3LMolY37ihXaPccZg",
+	"SSdjiy4Yt0hzJLRROp8ZTiJwmJSkufrgWWgQrVER0mXJ2fDvTffef/24gpYzH6mxDgUgY7YN17rYmE5n",
+	"Kgk6awvMm9Xbq7dXYulciQ4iKGnXerpYyq3mrFy/SEwuCb+oy1yTPju/kBvemq3580Lqxm8ip1WG4gMb",
+	"QvER1+Ly3VJoJ6wiFmYjOEPRnptibgrHFPQuRtr3WWjeeYgHcSCCOyTXnHL2YvFi4Q83FgtlNcRwEZai",
+	"UEbDBcqhmjdaNi7k72kPJy1TiOEloWIcSkdbb9HxLyatnvBE1fCKvifcQAzfyaGHyfa9ye6xPSy2e4pq",
+	"xdSFP+WJJyFHMeqDbYqT5nK/YZwvzh5KoN8nZ+tuALFR5Y6PBzjsNHXIYMye3I8bcy1zLEof9d31akpo",
+	"adMDQv2bD7IYBoabeUDDloOUoL59Lk10wKernzRj3lSi7sdjqukLWd3Tr4hUNdNT+9izhef+3pP01Fzx",
+	"WE/e9StEtThBEwejypPUFIEtZ17+9TehfBPKpOw0c7eT+24Ar6VKErT8cAu5DPZmuvtqAfXfCc8nHkKV",
+	"Vp/W1cEXgifiJ9ahdzzeYHr3Uxhu7sYJJdrPmn80Z0KJEESsK9EeeYzo8+N0Tcbnp3AdgSvzXFHV8zek",
+	"sK6E52M8l3km6+hwKLu59ZQ5pLuO6mGEiqXcZ8ZxHe+tIa6l86OMvPOz6p0irda7JvOsVVSfCOxMonZh",
+	"2RcuQ/fMPy8WC4/ttv4vAAD//78U/sITDwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

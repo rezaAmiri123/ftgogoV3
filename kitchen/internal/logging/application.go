@@ -41,3 +41,9 @@ func (a Application) ConfirmCreateTicket(ctx context.Context, cmd commands.Confi
 	defer func() { a.logger.Info().Err(err).Msg("<--kitchen.ConfirmCreateTicket") }()
 	return a.App.ConfirmCreateTicket(ctx, cmd)
 }
+
+func (a Application) AcceptTicket(ctx context.Context, cmd commands.AcceptTicket) (err error) {
+	a.logger.Info().Msg("-->kitchen.AcceptTicket")
+	defer func() { a.logger.Info().Err(err).Msg("<--kitchen.AcceptTicket") }()
+	return a.App.AcceptTicket(ctx, cmd)
+}
