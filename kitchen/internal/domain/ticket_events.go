@@ -1,7 +1,11 @@
 package domain
 
-type TicketAccepted struct{
-	Ticket *Ticket
-} 
+const (
+	TicketAcceptedEvent = "kitchen.TicketAccepted"
+)
 
-func(TicketAccepted)EventName()string{return "kitchen.TicketAccepted"}
+type TicketAccepted struct {
+	Ticket *Ticket
+}
+
+func (TicketAccepted) Key() string { return "kitchen.TicketAccepted" }

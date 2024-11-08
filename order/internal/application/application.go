@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 
-	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/application/commands"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/application/queries"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/domain"
@@ -41,11 +40,10 @@ func New(
 	consumers domain.ConsumerRepository,
 	kitchens domain.KitchenRepository,
 	accounts domain.AccountRepository,
-	domainPubliser ddd.EventPublisher,
 ) *Application {
 	return &Application{
 		appCommands: appCommands{
-			CreateOrderHandler: commands.NewCreateOrderHandler(orders, restaurants, consumers, kitchens, accounts, domainPubliser),
+			CreateOrderHandler: commands.NewCreateOrderHandler(orders, restaurants, consumers, kitchens, accounts),
 		},
 		appQueries: appQueries{
 			GetOrderHandler: queries.NewGetOrderHandler(orders),

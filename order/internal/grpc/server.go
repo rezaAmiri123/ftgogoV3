@@ -58,7 +58,7 @@ func (s server) GetOrder(ctx context.Context, request *orderpb.GetOrderRequest) 
 
 func (s server) toOrderProto(order *domain.Order) *orderpb.Order {
 	return &orderpb.Order{
-		OrderID: order.ID,
+		OrderID: order.ID(),
 		ConsumerID: order.ConsumerID,
 		RestaurantID: order.RestaurantID,
 		Status: order.Status.String(),

@@ -16,7 +16,7 @@ type Module struct{}
 
 func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 	// setip Driven adapters
-	domainDispatcher := ddd.NewEventDispatcher()
+	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
 	consumers := postgres.NewConsumerReopsitory("consumer.consumers", mono.DB())
 	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
 	if err != nil {
@@ -30,8 +30,9 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) error {
 	app = logging.LogApplicationAccess(app, mono.Logger())
 
 	// setup application handlers
-	accountHandlers := logging.LogDomainEventHandlersAccess(
+	accountHandlers := logging.LogEventHandlersAccess(
 		application.NewAccountHandlers(accounts),
+		"Consumer",
 		mono.Logger(),
 	)
 

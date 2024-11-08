@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/domain"
 )
 
@@ -18,12 +17,11 @@ type CreateOrder struct {
 }
 
 type CreateOrderHandler struct {
-	orders         domain.OrderRepository
-	restaurants    domain.RestaurantRepository
-	consumers      domain.ConsumerRepository
-	kitchens       domain.KitchenRepository
-	accounts       domain.AccountRepository
-	domainPubliser ddd.EventPublisher
+	orders      domain.OrderRepository
+	restaurants domain.RestaurantRepository
+	consumers   domain.ConsumerRepository
+	kitchens    domain.KitchenRepository
+	accounts    domain.AccountRepository
 }
 
 func NewCreateOrderHandler(
@@ -32,19 +30,21 @@ func NewCreateOrderHandler(
 	consumers domain.ConsumerRepository,
 	kitchens domain.KitchenRepository,
 	accounts domain.AccountRepository,
-	domainPubliser ddd.EventPublisher,
 ) CreateOrderHandler {
 	return CreateOrderHandler{
-		orders:         orders,
-		restaurants:    restaurants,
-		consumers:      consumers,
-		kitchens:       kitchens,
-		accounts:       accounts,
-		domainPubliser: domainPubliser,
+		orders:      orders,
+		restaurants: restaurants,
+		consumers:   consumers,
+		kitchens:    kitchens,
+		accounts:    accounts,
 	}
 }
 
 func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) error {
+	order, err := h.orders.Load(ctx, cmd.ID)
+	if err != nil {
+		return err
+	}
 	restaurant, err := h.restaurants.Find(ctx, cmd.RestaurantID)
 	if err != nil {
 		return err
@@ -53,15 +53,15 @@ func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) er
 	if err != nil {
 		return err
 	}
-	order, err := domain.CreateOrder(cmd.ID, cmd.ConsumerID, cmd.RestaurantID, lineItems, cmd.DeliverAt, cmd.DeliverTo)
+	err = order.CreateOrder(cmd.ConsumerID, cmd.RestaurantID, lineItems, cmd.DeliverAt, cmd.DeliverTo)
 	if err != nil {
 		return err
 	}
 
 	// Validate order by consumer
 	err = h.consumers.ValidateOrderByConsumer(ctx, domain.ValidateOrderByConsumer{
-		ConsumerID: order.ConsumerID,
-		OrderID:    order.ID,
+		ConsumerID: cmd.ConsumerID,
+		OrderID:    cmd.ID,
 		OrderTotal: order.OrderTotal(),
 	})
 	if err != nil {
@@ -70,9 +70,9 @@ func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) er
 
 	// Create Ticket
 	err = h.kitchens.CreateTicket(ctx, domain.CreateTicket{
-		ID:           order.ID,
-		RestaurantID: order.RestaurantID,
-		TicketDetail: order.LineItems,
+		ID:           cmd.ID,
+		RestaurantID: cmd.RestaurantID,
+		TicketDetail: lineItems,
 	})
 	if err != nil {
 		return err
@@ -80,8 +80,8 @@ func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) er
 
 	// Authorize order by account
 	err = h.accounts.AuthorizeOrderByAccount(ctx, domain.AuthorizeOrderByAccount{
-		AccountID:  order.ConsumerID,
-		OrderID:    order.ID,
+		AccountID:  cmd.ConsumerID,
+		OrderID:    cmd.ID,
 		OrderTotal: order.OrderTotal(),
 	})
 	if err != nil {
@@ -89,13 +89,13 @@ func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) er
 	}
 
 	// Confirm Create ticket
-	err = h.kitchens.ConfirmCreateTicket(ctx, order.ID)
+	err = h.kitchens.ConfirmCreateTicket(ctx, order.ID())
 	if err != nil {
 		return err
 	}
 
 	// Approve Order
-	err = order.ApproveOrder(order.ID)
+	err = order.ApproveOrder(order.ID())
 	if err != nil {
 		return err
 	}
@@ -104,5 +104,5 @@ func (h CreateOrderHandler) CreateOrder(ctx context.Context, cmd CreateOrder) er
 	if err != nil {
 		return err
 	}
-	return h.domainPubliser.Publish(ctx, order.GetEvents()...)
+	return nil
 }

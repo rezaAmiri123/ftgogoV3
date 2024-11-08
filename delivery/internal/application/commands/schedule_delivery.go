@@ -39,13 +39,13 @@ func (h ScheduleDeliveryHandler) ScheduleDelivery(ctx context.Context, cmd Sched
 	}
 
 	courier.Plan.Add(domain.Action{
-		DeliveryID: delivery.ID,
+		DeliveryID: delivery.ID(),
 		ActionType: domain.PickUp,
 		Address:    delivery.PickUpAddress,
 		When:       cmd.ReadyBy,
 	})
 	courier.Plan.Add(domain.Action{
-		DeliveryID: delivery.ID,
+		DeliveryID: delivery.ID(),
 		ActionType: domain.DropOff,
 		Address:    delivery.DeliveryAddress,
 		When:       cmd.ReadyBy.Add(30 * time.Minute),
@@ -56,7 +56,7 @@ func (h ScheduleDeliveryHandler) ScheduleDelivery(ctx context.Context, cmd Sched
 		return err
 	}
 
-	delivery.Schedule(cmd.ReadyBy, courier.ID)
+	delivery.Schedule(cmd.ReadyBy, courier.ID())
 
 	return h.deliveries.Update(ctx, delivery)
 }

@@ -15,10 +15,10 @@ type AcceptTicket struct {
 
 type AcceptTicketHandler struct {
 	tickets         domain.TicketRepository
-	domainPublisher ddd.EventPublisher
+	domainPublisher ddd.EventPublisher[ddd.AggregateEvent]
 }
 
-func NewAcceptTicketHandler(tickets domain.TicketRepository, domainPublisher ddd.EventPublisher) AcceptTicketHandler {
+func NewAcceptTicketHandler(tickets domain.TicketRepository, domainPublisher ddd.EventPublisher[ddd.AggregateEvent]) AcceptTicketHandler {
 	return AcceptTicketHandler{
 		tickets:         tickets,
 		domainPublisher: domainPublisher,
@@ -41,5 +41,5 @@ func (h AcceptTicketHandler) AcceptTicket(ctx context.Context, cmd AcceptTicket)
 		return err
 	}
 
-	return h.domainPublisher.Publish(ctx, ticket.GetEvents()...)
+	return h.domainPublisher.Publish(ctx, ticket.Events()...)
 }

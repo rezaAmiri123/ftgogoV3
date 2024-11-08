@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/restaurant/internal/domain"
 	"github.com/stackus/errors"
 )
@@ -36,7 +35,7 @@ func (r RestaurantRepository) Save(ctx context.Context, restaurant *domain.Resta
 	if err != nil {
 		return errors.ErrInternalServerError.Err(err)
 	}
-	_, err = r.db.ExecContext(ctx, r.table(query), restaurant.ID, restaurant.Name, address, menuItems)
+	_, err = r.db.ExecContext(ctx, r.table(query), restaurant.ID(), restaurant.Name, address, menuItems)
 
 	return err
 }
@@ -44,9 +43,7 @@ func (r RestaurantRepository) Save(ctx context.Context, restaurant *domain.Resta
 func (r RestaurantRepository) Find(ctx context.Context, restaurantID string) (*domain.Restaurant, error) {
 	const query = "SELECT name, address, menu_items from %s where id = $1 LIMIT 1"
 
-	restaurant := &domain.Restaurant{
-		AggregateBase: ddd.AggregateBase{ID: restaurantID},
-	}
+	restaurant := domain.NewRestaurant(restaurantID)
 
 	var address []byte
 	var menuItems []byte
@@ -84,7 +81,7 @@ func (r RestaurantRepository) Update(ctx context.Context, restaurant *domain.Res
 		return errors.ErrInternalServerError.Err(err)
 	}
 
-	_, err = r.db.ExecContext(ctx, r.table(query), restaurant.ID, restaurant.Name, address, menuItems)
+	_, err = r.db.ExecContext(ctx, r.table(query), restaurant.ID(), restaurant.Name, address, menuItems)
 
 	return err
 }

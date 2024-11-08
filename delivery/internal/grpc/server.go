@@ -92,7 +92,7 @@ func (s server) toAddressProto(address domain.Address) *deliverypb.Address {
 
 func (s server) toDeliveryProto(delivery *domain.Delivery) *deliverypb.Delivery {
 	return &deliverypb.Delivery{
-		DeliveryID:        delivery.ID,
+		DeliveryID:        delivery.ID(),
 		RestaurantID:      delivery.RestaurantID,
 		AssignedCourierID: delivery.AssignedCourierID,
 		Status:            delivery.Status.String(),

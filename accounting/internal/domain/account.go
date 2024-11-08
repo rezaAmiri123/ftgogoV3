@@ -5,6 +5,8 @@ import (
 	"github.com/stackus/errors"
 )
 
+const AccountAggregate = "accounting.Account"
+
 var (
 	ErrAccountIDCannotBeBlank   = errors.Wrap(errors.ErrBadRequest, "the account id cannot be blank")
 	ErrAccountNameCannotBeBlank = errors.Wrap(errors.ErrBadRequest, "the account name cannot be blank")
@@ -14,9 +16,17 @@ var (
 )
 
 type Account struct {
-	ddd.AggregateBase
+	ddd.Aggregate
 	Name    string
 	Enabled bool
+}
+
+func(Account)Key()string{return AccountAggregate}
+
+func NewAccount(id string)*Account{
+	return &Account{
+		Aggregate: ddd.NewAggregate(id,AccountAggregate),
+	}
 }
 
 func RegisterAccount(id, name string) (*Account, error) {
@@ -27,11 +37,9 @@ func RegisterAccount(id, name string) (*Account, error) {
 		return nil, ErrAccountNameCannotBeBlank
 	}
 
-	account := &Account{
-		AggregateBase: ddd.AggregateBase{ID: id},
-		Name:          name,
-		Enabled:       true,
-	}
+	account := NewAccount(id)
+	account.Name = name
+	account.Enabled = true
 
 	return account, nil
 }

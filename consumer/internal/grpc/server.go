@@ -42,7 +42,7 @@ func (s server) GetConsumer(ctx context.Context, request *consumerpb.GetConsumer
 		return nil, err
 	}
 	return &consumerpb.GetConsumerResponse{
-		ConsumerID: consumer.ID,
+		ConsumerID: consumer.ID(),
 		Name:       consumer.Name,
 	}, nil
 }

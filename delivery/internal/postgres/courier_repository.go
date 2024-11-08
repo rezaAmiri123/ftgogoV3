@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rezaAmiri123/ftgogoV3/delivery/internal/domain"
-	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stackus/errors"
 )
 
@@ -28,9 +27,8 @@ func NewCourierRepository(tableName string, db *sql.DB) CourierRepository {
 
 func (r CourierRepository) Find(ctx context.Context, courierID string) (*domain.Courier, error) {
 	const query = `SELECT plan, available FROM %s WHERE id = $1`
-	courier := &domain.Courier{
-		AggregateBase: ddd.AggregateBase{ID: courierID},
-	}
+	
+	courier := domain.NewCourier(courierID)
 
 	var plan []byte
 
@@ -56,11 +54,9 @@ func (r CourierRepository) FindOrCreate(ctx context.Context, courierID string) (
 	courier, err := r.Find(ctx, courierID)
 	if err != nil {
 		if errors.Is(err, domain.ErrCourierNotFound) {
-			courier := &domain.Courier{
-				AggregateBase: ddd.AggregateBase{ID: courierID},
-				Plan:          domain.Plan{},
-				Available:     true,
-			}
+			courier := domain.NewCourier(courierID)
+			courier.Plan = domain.Plan{}
+			courier.Available = true
 			err = r.Save(ctx, courier)
 			if err != nil {
 				return nil, err
@@ -89,11 +85,9 @@ func (r CourierRepository) FindFirstAvailable(ctx context.Context) (*domain.Cour
 			return r.FindOrCreate(ctx, uuid.New().String())
 		}
 	}
-	courier := &domain.Courier{
-		AggregateBase: ddd.AggregateBase{ID: id},
-		Available:     available,
-	}
-
+	courier := domain.NewCourier(id)
+	courier.Available = available
+	
 	err = json.Unmarshal(plan, &courier.Plan)
 	if err != nil {
 		return nil, errors.ErrInternalServerError.Err(err)
@@ -108,7 +102,7 @@ func (r CourierRepository) Save(ctx context.Context, courier *domain.Courier) er
 	if err != nil {
 		return err
 	}
-	_, err = r.db.ExecContext(ctx, r.table(query), courier.GetID(), plan, courier.Available)
+	_, err = r.db.ExecContext(ctx, r.table(query), courier.ID(), plan, courier.Available)
 	return err
 }
 
@@ -121,7 +115,7 @@ func (r CourierRepository) Update(ctx context.Context, courier *domain.Courier) 
 		return errors.ErrInternalServerError.Err(err)
 	}
 
-	_, err = r.db.ExecContext(ctx, r.table(query), courier.GetID(), plan, courier.Available)
+	_, err = r.db.ExecContext(ctx, r.table(query), courier.ID(), plan, courier.Available)
 	return err
 }
 

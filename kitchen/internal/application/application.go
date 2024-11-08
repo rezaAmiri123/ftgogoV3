@@ -39,7 +39,7 @@ type (
 
 var _ App = (*Application)(nil)
 
-func New(tickets domain.TicketRepository, domainPublisher ddd.EventPublisher) *Application {
+func New(tickets domain.TicketRepository, domainPublisher ddd.EventPublisher[ddd.AggregateEvent]) *Application {
 	return &Application{
 		appCommands: appCommands{
 			CreateTicketHandler:        commands.NewCreateTicketHandler(tickets),

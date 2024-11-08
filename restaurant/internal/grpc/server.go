@@ -44,7 +44,7 @@ func (s server) GetRestaurant(ctx context.Context, request *restaurantpb.GetRest
 		return nil, err
 	}
 	return &restaurantpb.GetRestaurantResponse{
-		RestaurantID: restaurant.ID,
+		RestaurantID: restaurant.ID(),
 		Name:         restaurant.Name,
 		Address:      s.toAddressProto(restaurant.Address),
 		MenuItems:    s.toMenuItemsProto(restaurant.MenuItems),

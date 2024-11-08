@@ -5,6 +5,8 @@ import (
 	"github.com/stackus/errors"
 )
 
+const ConsumerAggregate = "consumer.Consumer"
+
 var (
 	ErrConsumerIDCannotBeBlank   = errors.Wrap(errors.ErrBadRequest, "the consumer id cannot be blank")
 	ErrConsumerNameCannotBeBlank = errors.Wrap(errors.ErrBadRequest, "the consumer name cannot be blank")
@@ -12,9 +14,17 @@ var (
 )
 
 type Consumer struct {
-	ddd.AggregateBase
+	ddd.Aggregate
 	Name      string
 	Addresses map[string]Address
+}
+
+func (Consumer) Key() string { return ConsumerAggregate }
+
+func NewConsumer(id string) *Consumer {
+	return &Consumer{
+		Aggregate: ddd.NewAggregate(id, ConsumerAggregate),
+	}
 }
 
 func RegisterConsumer(id, name string) (*Consumer, error) {
@@ -25,16 +35,14 @@ func RegisterConsumer(id, name string) (*Consumer, error) {
 		return nil, ErrConsumerNameCannotBeBlank
 	}
 
-	consumer := &Consumer{
-		AggregateBase: ddd.AggregateBase{ID: id},
-		Name:          name,
-		Addresses:     make(map[string]Address),
-	}
+	consumer := NewConsumer(id)
+	consumer.Name = name
+	consumer.Addresses = make(map[string]Address)
 
-	consumer.AddEvent(&ConsumerRegistered{
+	consumer.AddEvent(ConsumerRegisteredEvent, &ConsumerRegistered{
 		Consumer: consumer,
 	})
-	
+
 	return consumer, nil
 }
 

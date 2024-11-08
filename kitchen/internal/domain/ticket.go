@@ -7,6 +7,8 @@ import (
 	"github.com/stackus/errors"
 )
 
+const TicketAggregate = "kitchen.TicketAggregate"
+
 var (
 	ErrTicketIDCannotBeBlank     = errors.Wrap(errors.ErrBadRequest, "the ticket id cannot be blank")
 	ErrRestaurantIDCannotBeBlank = errors.Wrap(errors.ErrBadRequest, "the restaurant id cannot be blank")
@@ -16,7 +18,7 @@ var (
 )
 
 type Ticket struct {
-	ddd.AggregateBase
+	ddd.Aggregate
 	RestaurantID     string
 	LineItems        []LineItem
 	ReadyBy          time.Time
@@ -26,6 +28,14 @@ type Ticket struct {
 	PickedUpAt       time.Time
 	Status           TicketStatus
 	PerviousStatus   TicketStatus
+}
+
+func (Ticket) Key() string { return TicketAggregate }
+
+func NewTicket(id string) *Ticket {
+	return &Ticket{
+		Aggregate: ddd.NewAggregate(id, TicketAggregate),
+	}
 }
 
 func CreateTicket(id, restaurantID string, lineItems []LineItem) (*Ticket, error) {
@@ -38,12 +48,10 @@ func CreateTicket(id, restaurantID string, lineItems []LineItem) (*Ticket, error
 	if len(lineItems) == 0 {
 		return nil, ErrLineItemsCannotBeEmpty
 	}
-	ticket := &Ticket{
-		AggregateBase: ddd.AggregateBase{ID: id},
-		RestaurantID:  restaurantID,
-		LineItems:     lineItems,
-		Status:        CreatePending,
-	}
+	ticket := NewTicket(id)
+	ticket.RestaurantID = restaurantID
+	ticket.LineItems = lineItems
+	ticket.Status = CreatePending
 
 	return ticket, nil
 }
@@ -67,9 +75,9 @@ func (t *Ticket) Accpept(readyBy time.Time) error {
 	t.ReadyBy = readyBy
 	t.Status = Accepted // assume that this is the case; doesn't appear to be ever set in ftgo-kitchen-service
 
-	t.AddEvent(&TicketAccepted{
+	t.AddEvent(TicketAcceptedEvent, &TicketAccepted{
 		Ticket: t,
 	})
-	
+
 	return nil
 }

@@ -1,11 +1,10 @@
 package handlers
 
 import (
-	"github.com/rezaAmiri123/ftgogoV3/consumer/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/consumer/internal/domain"
 	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 )
 
-func RegisterAccountHandlers(accountHandlers application.DomainEventHandlers, domainSubscriber ddd.EventSubscriber){
-	domainSubscriber.Subscribe(domain.ConsumerRegistered{}, accountHandlers.OnConsumerRegistered)
+func RegisterAccountHandlers(accountHandlers ddd.EventHandler[ddd.AggregateEvent], domainSubscriber ddd.EventSubscriber[ddd.AggregateEvent]){
+	domainSubscriber.Subscribe(domain.ConsumerRegisteredEvent, accountHandlers)
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/rezaAmiri123/ftgogoV3/delivery/internal/domain"
-	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stackus/errors"
 )
 
@@ -41,7 +40,7 @@ func (r DeliveryRepository) Save(ctx context.Context, delivery *domain.Delivery)
 	}
 
 	_, err = r.db.ExecContext(ctx, r.table(query),
-		delivery.ID,
+		delivery.ID(),
 		delivery.RestaurantID,
 		delivery.AssignedCourierID,
 		pickUpAddress,
@@ -59,9 +58,7 @@ func (r DeliveryRepository) Find(ctx context.Context, deliveryID string) (*domai
 	status, pick_up_time, ready_by
 	from %s where id = $1 LIMIT 1`
 
-	delivery := &domain.Delivery{
-		AggregateBase: ddd.AggregateBase{ID: deliveryID},
-	}
+	delivery := domain.NewDelivery(deliveryID)
 
 	var pickUpAddress []byte
 	var deliveryAddress []byte
@@ -107,7 +104,7 @@ func (r DeliveryRepository) Update(ctx context.Context, delivery *domain.Deliver
 	}
 
 	_, err = r.db.ExecContext(ctx, r.table(query),
-		delivery.ID,
+		delivery.ID(),
 		delivery.RestaurantID,
 		delivery.AssignedCourierID,
 		pickUpAddress,

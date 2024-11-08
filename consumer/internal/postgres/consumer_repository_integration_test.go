@@ -11,7 +11,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rezaAmiri123/ftgogoV3/consumer/internal/domain"
-	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -96,11 +95,11 @@ func (c *consumerSuite) SetupTest() {
 	c.repo = NewConsumerReopsitory(c.tableName, c.db)
 }
 func (c *consumerSuite) TestConsumerReopsitory_Save() {
-	err := c.repo.Save(context.Background(), &domain.Consumer{
-		AggregateBase: ddd.AggregateBase{ID: "id"},
-		Name:      "name",
-		Addresses: map[string]domain.Address{"address-id": domain.Address{Street1: "street"}},
-	})
+	consumer := domain.NewConsumer("id")
+	consumer.Name = "name"
+	consumer.Addresses =  map[string]domain.Address{"address-id": domain.Address{Street1: "street"}}
+
+	err := c.repo.Save(context.Background(), consumer)
 	c.NoError(err)
 	query := fmt.Sprintf("SELECT name FROM %s WHERE id = $1", c.tableName)
 	row := c.db.QueryRow(query, "id")
@@ -111,13 +110,12 @@ func (c *consumerSuite) TestConsumerReopsitory_Save() {
 }
 
 func (c *consumerSuite) TestConsumerReopsitory_Find() {
-	err := c.repo.Save(context.Background(), &domain.Consumer{
-		AggregateBase: ddd.AggregateBase{ID: "id"},
-		Name:      "name",
-		Addresses: map[string]domain.Address{"address-id": domain.Address{Street1: "street"}},
-	})
+	consumer := domain.NewConsumer("id")
+	consumer.Name = "name"
+	consumer.Addresses =  map[string]domain.Address{"address-id": domain.Address{Street1: "street"}}
+	err := c.repo.Save(context.Background(), consumer)
 	c.NoError(err)
-	consumer, err := c.repo.Find(context.Background(), "id")
+	consumer, err = c.repo.Find(context.Background(), "id")
 	c.NoError(err)
 	c.Equal(consumer.Name, "name")
 	address, ok := consumer.Addresses["address-id"]
@@ -126,17 +124,14 @@ func (c *consumerSuite) TestConsumerReopsitory_Find() {
 }
 
 func (c *consumerSuite) TestConsumerReopsitory_Update() {
-	err := c.repo.Save(context.Background(), &domain.Consumer{
-		AggregateBase: ddd.AggregateBase{ID: "id"},
-		Name:      "name",
-		Addresses: map[string]domain.Address{"address-id": domain.Address{Street1: "street"}},
-	})
+	consumer := domain.NewConsumer("id")
+	consumer.Name = "name"
+	consumer.Addresses =  map[string]domain.Address{"address-id": domain.Address{Street1: "street"}}
+	err := c.repo.Save(context.Background(), consumer)
 	c.NoError(err)
-	err = c.repo.Update(context.Background(),&domain.Consumer{
-		AggregateBase: ddd.AggregateBase{ID: "id"},
-		Name: "changed",
-		Addresses: map[string]domain.Address{},
-	})
+	consumer.Name = "changed"
+	consumer.Addresses=map[string]domain.Address{}
+	err = c.repo.Update(context.Background(),consumer)
 	c.NoError(err)
 	query := fmt.Sprintf("SELECT name FROM %s WHERE id = $1", c.tableName)
 	row := c.db.QueryRow(query, "id")

@@ -29,7 +29,7 @@ func (s server) GetAccount(ctx context.Context, request *accountingpb.GetAccount
 	}
 
 	return &accountingpb.GetAccountResponse{
-		AccountID: account.ID,
+		AccountID: account.ID(),
 		Enabled:   account.Enabled,
 	}, nil
 }

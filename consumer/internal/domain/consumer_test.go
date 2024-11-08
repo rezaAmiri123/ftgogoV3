@@ -3,7 +3,6 @@ package domain
 import (
 	"testing"
 
-	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,10 +50,8 @@ func TestConsumer_GetAddress(t *testing.T) {
 }
 
 func TestRegisterConsumer(t *testing.T) {
-	consumer := &Consumer{
-		AggregateBase: ddd.AggregateBase{ID: "id"},
-		Name: "name",
-	}
+	consumer := NewConsumer("id")
+	consumer.Name = "name"
 	type args struct {
 		id   string
 		name string

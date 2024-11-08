@@ -7,21 +7,30 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/domain"
 )
 
-type DeliveryHandlers struct {
-	ignoreUnimplementedDomainEvents
+type DeliveryHandlers[T ddd.AggregateEvent] struct {
 	deliveries domain.DeliveryRepository
 }
 
-func NewDeliveryHandlers(deliveries domain.DeliveryRepository) *DeliveryHandlers {
-	return &DeliveryHandlers{
+var _ ddd.EventHandler[ddd.AggregateEvent] = (*DeliveryHandlers[ddd.AggregateEvent])(nil)
+
+func NewDeliveryHandlers(deliveries domain.DeliveryRepository) DeliveryHandlers[ddd.AggregateEvent] {
+	return DeliveryHandlers[ddd.AggregateEvent]{
 		deliveries: deliveries,
 	}
 }
 
-func (h DeliveryHandlers) OnTicketAccepted(ctx context.Context, event ddd.Event) error {
-	ticketAcceted := event.(*domain.TicketAccepted)
+func (h DeliveryHandlers[T]) HandleEvent(ctx context.Context, event T) error {
+	switch event.EventName() {
+	case domain.TicketAcceptedEvent:
+		return h.onTicketAccepted(ctx, event)
+	}
+	return nil
+}
+
+func (h DeliveryHandlers[T]) onTicketAccepted(ctx context.Context, event ddd.AggregateEvent) error {
+	ticketAcceted := event.Payload().(*domain.TicketAccepted)
 	return h.deliveries.ScheduleDelivery(ctx, domain.ScheduleDelivery{
-		ID:      ticketAcceted.Ticket.ID,
+		ID:      ticketAcceted.Ticket.ID(),
 		ReadyBy: ticketAcceted.Ticket.ReadyBy,
 	})
 }

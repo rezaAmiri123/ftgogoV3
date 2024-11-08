@@ -36,7 +36,7 @@ type (
 
 	Application struct {
 		consumers       domain.ConsumerRepository
-		domainPublisher ddd.EventPublisher
+		domainPublisher ddd.EventPublisher[ddd.AggregateEvent]
 	}
 )
 
@@ -54,7 +54,7 @@ var _ App = (*Application)(nil)
 
 func New(
 	consumers domain.ConsumerRepository,
-	domainPublisher ddd.EventPublisher,
+	domainPublisher ddd.EventPublisher[ddd.AggregateEvent],
 ) *Application {
 	return &Application{
 		consumers:       consumers,
@@ -74,7 +74,7 @@ func (a Application) RegisterConsumer(ctx context.Context, register RegisterCons
 		return err
 	}
 
-	return a.domainPublisher.Publish(ctx, consumer.GetEvents()...)
+	return a.domainPublisher.Publish(ctx, consumer.Events()...)
 }
 
 func (a Application) GetConsumer(ctx context.Context, get GetConsumer) (*domain.Consumer, error) {

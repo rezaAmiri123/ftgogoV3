@@ -7,23 +7,29 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 )
 
-type AccountHandlers struct {
+type AccountHandlers[T ddd.AggregateEvent] struct {
 	accounts domain.AccountRepository
-	ignoreUnimplementedDomainEvents
 }
 
-var _ DomainEventHandlers = (*AccountHandlers)(nil)
+var _ ddd.EventHandler[ddd.AggregateEvent] = (*AccountHandlers[ddd.AggregateEvent])(nil)
 
-func NewAccountHandlers(accounts domain.AccountRepository) *AccountHandlers {
-	return &AccountHandlers{
+func NewAccountHandlers(accounts domain.AccountRepository) *AccountHandlers[ddd.AggregateEvent] {
+	return &AccountHandlers[ddd.AggregateEvent]{
 		accounts: accounts,
 	}
 }
+func (h AccountHandlers[T]) HandleEvent(ctx context.Context, event T) error {
+	switch event.EventName() {
+	case domain.ConsumerRegisteredEvent:
+		return h.OnConsumerRegistered(ctx, event)
+	}
+	return nil
+}
 
-func (h AccountHandlers) OnConsumerRegistered(ctx context.Context, event ddd.Event) error {
-	consumerRegistered := event.(*domain.ConsumerRegistered)
+func (h AccountHandlers[T]) OnConsumerRegistered(ctx context.Context, event ddd.AggregateEvent) error {
+	consumerRegistered := event.Payload().(*domain.ConsumerRegistered)
 	return h.accounts.CreateAccount(ctx, domain.CreateAccount{
-		ID:   consumerRegistered.Consumer.ID,
+		ID:   consumerRegistered.Consumer.ID(),
 		Name: consumerRegistered.Consumer.Name,
 	})
 }

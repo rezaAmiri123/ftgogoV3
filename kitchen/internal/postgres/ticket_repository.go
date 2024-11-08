@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/domain"
 	"github.com/stackus/errors"
 )
@@ -36,7 +35,7 @@ func (r TicketReopsitory) Save(ctx context.Context, ticket *domain.Ticket) error
 		return errors.ErrInternalServerError.Err(err)
 	}
 
-	_, err = r.db.ExecContext(ctx, r.table(query), ticket.ID, ticket.RestaurantID, lineItems,
+	_, err = r.db.ExecContext(ctx, r.table(query), ticket.ID(), ticket.RestaurantID, lineItems,
 		ticket.AcceptedAt, ticket.PreparingTime, ticket.ReadyForPickUpAt, ticket.PickedUpAt,
 		ticket.Status.String(), ticket.PerviousStatus.String())
 
@@ -48,9 +47,7 @@ func (r TicketReopsitory) Find(ctx context.Context, ticketID string) (*domain.Ti
 	picked_up_at, status, pervious_status
 	from %s where id = $1 LIMIT 1`
 
-	ticket := &domain.Ticket{
-		AggregateBase: ddd.AggregateBase{ID: ticketID},
-	}
+	ticket := domain.NewTicket(ticketID)
 
 	var lineItems []byte
 	var status string
@@ -88,7 +85,7 @@ func (r TicketReopsitory) Update(ctx context.Context, ticket *domain.Ticket) err
 		return errors.ErrInternalServerError.Err(err)
 	}
 
-	_, err = r.db.ExecContext(ctx, r.table(query), ticket.ID, ticket.RestaurantID, lineItems,
+	_, err = r.db.ExecContext(ctx, r.table(query), ticket.ID(), ticket.RestaurantID, lineItems,
 		ticket.AcceptedAt, ticket.PreparingTime, ticket.ReadyForPickUpAt, ticket.PickedUpAt,
 		ticket.Status.String(), ticket.PerviousStatus.String(),
 	)

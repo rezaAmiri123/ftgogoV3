@@ -1,7 +1,24 @@
 package domain
 
-type OrderCreated struct{
-	Order *Order
+import "time"
+
+const (
+	OrderCreatedEvent  = "order.OrderCreated"
+	OrderApprovedEvent = "order.OrderApproved"
+)
+
+type OrderCreated struct {
+	ConsumerID   string
+	RestaurantID string
+	LineItems    []LineItem
+	DeliverAt    time.Time
+	DeliverTo    Address
 }
 
-func(OrderCreated)EventName()string{ return "order.OrderCreated"}
+func (OrderCreated) Key() string { return OrderCreatedEvent }
+
+type OrderApproved struct {
+	TicketID string
+}
+
+func (OrderApproved) Key() string { return OrderApprovedEvent }

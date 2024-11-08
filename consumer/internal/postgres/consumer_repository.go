@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/rezaAmiri123/ftgogoV3/consumer/internal/domain"
-	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stackus/errors"
 )
 
@@ -32,7 +31,7 @@ func (r ConsumerReopsitory) Save(ctx context.Context, consumer *domain.Consumer)
 	if err != nil {
 		return errors.ErrInternalServerError.Err(err)
 	}
-	_, err = r.db.ExecContext(ctx, r.table(query), consumer.ID, consumer.Name, addresses)
+	_, err = r.db.ExecContext(ctx, r.table(query), consumer.ID(), consumer.Name, addresses)
 
 	return err
 }
@@ -40,9 +39,7 @@ func (r ConsumerReopsitory) Save(ctx context.Context, consumer *domain.Consumer)
 func (r ConsumerReopsitory) Find(ctx context.Context, consumerID string) (*domain.Consumer, error) {
 	const query = "SELECT name, addresses from %s where id = $1 LIMIT 1"
 
-	consumer := &domain.Consumer{
-		AggregateBase: ddd.AggregateBase{ID: consumerID},
-	}
+	consumer := domain.NewConsumer(consumerID)
 
 	var addresses []byte
 
@@ -68,7 +65,7 @@ func (r ConsumerReopsitory) Update(ctx context.Context, consumer *domain.Consume
 		return errors.ErrInternalServerError.Err(err)
 	}
 
-	_, err = r.db.ExecContext(ctx, r.table(query), consumer.ID, consumer.Name, addresses)
+	_, err = r.db.ExecContext(ctx, r.table(query), consumer.ID(), consumer.Name, addresses)
 
 	return err
 }

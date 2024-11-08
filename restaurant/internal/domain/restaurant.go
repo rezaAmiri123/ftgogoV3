@@ -5,6 +5,8 @@ import (
 	"github.com/stackus/errors"
 )
 
+const RestaurantAggregate = "restaurant.RestaurantAggregate"
+
 var (
 	ErrRestaurantIDCannotBeBlank      = errors.Wrap(errors.ErrBadRequest, "the restaurant id cannot be blank")
 	ErrRestaurantNameCannotBeBlank    = errors.Wrap(errors.ErrBadRequest, "the restaurant name cannot be blank")
@@ -13,10 +15,18 @@ var (
 )
 
 type Restaurant struct {
-	ddd.AggregateBase
+	ddd.Aggregate
 	Name      string
 	Address   Address
 	MenuItems map[string]MenuItem
+}
+
+func (Restaurant) Key() string { return RestaurantAggregate }
+
+func NewRestaurant(id string) *Restaurant {
+	return &Restaurant{
+		Aggregate: ddd.NewAggregate(id, RestaurantAggregate),
+	}
 }
 
 func CreateRestaurant(id, name string, address Address) (*Restaurant, error) {
@@ -29,12 +39,12 @@ func CreateRestaurant(id, name string, address Address) (*Restaurant, error) {
 	if address == (Address{}) {
 		return nil, ErrRestaurantAddressCannotBeBlank
 	}
-	restaurant := &Restaurant{
-		AggregateBase: ddd.AggregateBase{ID: id},
-		Name:          name,
-		Address:       address,
-		MenuItems:     make(map[string]MenuItem),
-	}
+
+	restaurant := NewRestaurant(id)
+	restaurant.Name = name
+	restaurant.Address = address
+	restaurant.MenuItems = make(map[string]MenuItem)
+
 	return restaurant, nil
 }
 

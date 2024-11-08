@@ -5,46 +5,60 @@ import (
 	"sync"
 )
 
-type EventSubscriber interface{
-	Subscribe(event Event, handler EventHandler)
-}
+
+
+type (
+	EventHandler[T Event] interface {
+		HandleEvent(ctx context.Context, event T) error
+	}
+
+	EventHandlerFunc[T Event] func(ctx context.Context, event T) error
+
+	EventSubscriber[T Event] interface {
+		Subscribe(name string, handler EventHandler[T])
+	}
+
+	EventDispatcher[T Event] struct {
+		handlers map[string][]EventHandler[T]
+		mu       sync.Mutex
+	}
+)
 
 //go:generate mockery --name EventPublisher
-type EventPublisher interface{
-	Publish(ctx context.Context, events ...Event)error
+type EventPublisher[T Event] interface {
+	Publish(ctx context.Context, events ...T) error
 }
 
-type EventDispatcher struct{
-	handlers map[string][]EventHandler
-	mu sync.Mutex
-}
+var _ interface {
+	EventSubscriber[Event]
+	EventPublisher[Event]
+} = (*EventDispatcher[Event])(nil)
 
-var _ interface{
-	EventSubscriber
-	EventPublisher
-} = (*EventDispatcher)(nil)
-
-func NewEventDispatcher()*EventDispatcher{
-	return &EventDispatcher{
-		handlers: make(map[string][]EventHandler),
+func NewEventDispatcher[T Event]() *EventDispatcher[T] {
+	return &EventDispatcher[T]{
+		handlers: make(map[string][]EventHandler[T]),
 	}
 }
 
-func (d *EventDispatcher)Subscribe(event Event, handler EventHandler){
-	d.mu.Lock()
-	defer d.mu.Unlock()
+func (h *EventDispatcher[T]) Subscribe(name string, handler EventHandler[T]) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
-	d.handlers[event.EventName()] = append(d.handlers[event.EventName()], handler)
+	h.handlers[name] = append(h.handlers[name], handler)
 }
 
-func (d *EventDispatcher)Publish(ctx context.Context, events ...Event)(err error){
-	for _, event := range events{
-		for _, handler := range d.handlers[event.EventName()]{
-			err = handler(ctx, event)
-			if err!= nil{
+func (h *EventDispatcher[T]) Publish(ctx context.Context, events ...T) error {
+	for _, event := range events {
+		for _, handler := range h.handlers[event.EventName()] {
+			err := handler.HandleEvent(ctx, event)
+			if err != nil {
 				return err
-			} 
+			}
 		}
 	}
 	return nil
+}
+
+func (f EventHandlerFunc[T]) HandleEvent(ctx context.Context, event T) error {
+	return f(ctx, event)
 }

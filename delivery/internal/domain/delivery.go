@@ -7,6 +7,8 @@ import (
 	"github.com/stackus/errors"
 )
 
+const DeliveryAggregate = "delivery.DeliveryAggregate"
+
 var (
 	ErrDeliveryIDCannotBeBlank      = errors.Wrap(errors.ErrBadRequest, "the delivery id cannot be blank")
 	ErrRestaurantIDCannotBeBlank    = errors.Wrap(errors.ErrBadRequest, "the restaurant id cannot be blank")
@@ -15,7 +17,7 @@ var (
 )
 
 type Delivery struct {
-	ddd.AggregateBase
+	ddd.Aggregate
 	RestaurantID      string
 	AssignedCourierID string
 	PickUpAddress     Address
@@ -23,6 +25,14 @@ type Delivery struct {
 	Status            DeliveryStatus
 	PickUpTime        time.Time
 	ReadyBy           time.Time
+}
+
+func (Delivery) key() string { return DeliveryAggregate }
+
+func NewDelivery(id string) *Delivery {
+	return &Delivery{
+		Aggregate: ddd.NewAggregate(id, DeliveryAggregate),
+	}
 }
 
 func CreateDelivery(id, restaurantID string, pickUpAddress, deliveryAddress Address) (*Delivery, error) {
@@ -39,14 +49,13 @@ func CreateDelivery(id, restaurantID string, pickUpAddress, deliveryAddress Addr
 		return nil, ErrDeliveryAddressCannotBeBlank
 	}
 
-	delivery := &Delivery{
-		AggregateBase:     ddd.AggregateBase{ID: id},
-		RestaurantID:      restaurantID,
-		AssignedCourierID: "",
-		PickUpAddress:     pickUpAddress,
-		DeliveryAddress:   deliveryAddress,
-		Status:            DeliveryPending,
-	}
+	delivery :=NewDelivery(id)
+	delivery.RestaurantID = restaurantID
+	delivery.AssignedCourierID = ""
+	delivery.PickUpAddress = pickUpAddress
+	delivery.DeliveryAddress = deliveryAddress
+	delivery.Status = DeliveryPending
+
 	return delivery, nil
 }
 
