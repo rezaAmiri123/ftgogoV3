@@ -16,7 +16,7 @@ jobs:
       - name: Run 
         run: |       
           npm install -g @asyncapi/cli
-          # npm install -g @asyncapi/html-template
+          npm install -g @asyncapi/html-template@2.1.7
           cd consumer/consumerpb
           asyncapi generate fromTemplate asyncapi.yaml @asyncapi/html-template -o . --force-write
           cd ../..
