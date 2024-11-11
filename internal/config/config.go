@@ -16,11 +16,17 @@ type (
 		Conn string `required:"true"`
 	}
 
+	NatsConfig struct {
+		URL    string `required:"true"`
+		Stream string `default:"ftgogo"`
+	}
+
 	AppConfig struct {
 		Secret          string `envconfig:"SECRET" required:"true"`
 		Environment     string
 		LogLevel        string `envconfig:"LOG_LEVEL" default:"DEBUG"`
 		PG              PGConfig
+		Nats            NatsConfig
 		Rpc             rpc.RpcConfig
 		Web             web.WebConfig
 		ShutdownTimeout time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"30s"`

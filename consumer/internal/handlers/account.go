@@ -6,5 +6,5 @@ import (
 )
 
 func RegisterAccountHandlers(accountHandlers ddd.EventHandler[ddd.AggregateEvent], domainSubscriber ddd.EventSubscriber[ddd.AggregateEvent]){
-	domainSubscriber.Subscribe(domain.ConsumerRegisteredEvent, accountHandlers)
+	domainSubscriber.Subscribe(accountHandlers, domain.ConsumerRegisteredEvent )
 }

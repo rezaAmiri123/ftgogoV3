@@ -6,5 +6,5 @@ import (
 )
 
 func RegisterDeliveryHandlers(deliveryHandlers ddd.EventHandler[ddd.AggregateEvent], domainSunscriber ddd.EventSubscriber[ddd.AggregateEvent]) {
-	domainSunscriber.Subscribe(domain.TicketAcceptedEvent, deliveryHandlers)
+	domainSunscriber.Subscribe(deliveryHandlers, domain.TicketAcceptedEvent)
 }

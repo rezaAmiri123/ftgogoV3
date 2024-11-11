@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -44,7 +43,7 @@ func New() *registry {
 func (r *registry) Serialize(key string, v any) ([]byte, error) {
 	reg, exists := r.registered[key]
 	if !exists {
-		return nil, fmt.Errorf("nothing has been registered with the key %s", key)
+		return nil, UnregisteredKey(key)
 	}
 	return reg.serializer(v)
 }
@@ -52,7 +51,7 @@ func (r *registry) Serialize(key string, v any) ([]byte, error) {
 func (r *registry) Build(key string, options ...BuildOption) (any, error) {
 	reg, exists := r.registered[key]
 	if !exists {
-		return nil, fmt.Errorf("nothing has been registered with the key %s", key)
+		return nil, UnregisteredKey(key)
 	}
 
 	v := reg.factory()
@@ -86,7 +85,7 @@ func (r *registry) register(key string, fn func() any, s Serializer, d Deseriali
 	defer r.mu.Unlock()
 
 	if _, exists := r.registered[key];exists{
-		return fmt.Errorf("something with the key `%s` has already been registered", key)
+		return AlreadyRegisteredKey(key)
 	}
 
 	r.registered[key] = registered{
