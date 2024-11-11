@@ -1,0 +1,54 @@
+# ag asyncapi.yaml @asyncapi/html-template --force-write
+# npm install -g @asyncapi/html-template@0.16.0
+# asyncapi generate fromTemplate asyncapi.yaml @asyncapi/html-template --force-write
+# The generator uses html-template version 0.16.0 and not the latest version.
+# ag asyncapi.yaml @asyncapi/html-template --force-write
+asyncapi: '2.3.0'
+info:
+  title: Store Management AsyncAPI
+  version: '1.0.0'
+
+defaultContentType: application/octet-stream
+
+channels:
+  ftgogo.consumers.events.Consumer:
+    $ref: '#/components/channels/ftgogo.consumers.events.Consumer'
+
+components:
+  channels:
+    ftgogo.consumers.events.Consumer:
+      subscribe:
+        operationId: consumerAggregateEvents
+        message:
+          oneOf:
+            - $ref: '#/components/messages/consumerapi.ConsumerRegistered'
+        tags:
+          - name: Consumer
+      bindings:
+        nats:
+          queue: ftgogo.consumers.events.Consumer
+          x-queue-constant: consumerpb.ConsumerAggregateChannel
+  messages:
+    consumerapi.ConsumerRegistered:
+      title: ConsumerRegistered
+      description: A new store has been created
+      x-name-constant: consumerpb.ConsumerRegisteredEvent
+      x-payload-type: '*consumerpb.ConsumerRegistered'
+      payload:
+        $ref: '#/components/schemas/consumerpb.ConsumerRegistered'
+      tags:
+        - name: Store
+  schemas:
+    ConsumerId:
+      type: string
+      description: Identity of the store
+    consumerpb.ConsumerRegistered:
+      type: object
+      additionalProperties: false
+      properties:
+        Id:
+          $ref: '#/components/schemas/ConsumerId'
+        Name:
+          type: string
+          description: Name of the new store
+    
