@@ -63,6 +63,11 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 	}
 	handlers.RegisterAccountHandlers(accountHandlers, domainDispatcher)
 	handlers.RegisterIntegrationEventHandlers(integrationEventHandlers,domainDispatcher)
+	
+	if err = consumerpb.RegisterAsyncAPI(mono.Mux());err!= nil{
+		return err
+	}
+	
 	return nil
 }
 

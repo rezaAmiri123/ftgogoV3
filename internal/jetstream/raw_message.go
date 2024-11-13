@@ -35,7 +35,7 @@ func (m *rawMessage) NAck() error {
 	return m.nackFn()
 }
 
-func (m *rawMessage) Extend() error {
+func (m rawMessage) Extend() error {
 	return m.extendFn()
 }
 

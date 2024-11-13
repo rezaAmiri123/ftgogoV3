@@ -22,17 +22,17 @@ type (
 
 	MessageHandlerFunc[O Message] func(ctx context.Context, msg O) error
 
-	MessagePulisher[I any] interface {
+	MessagePublisher[I any] interface {
 		Publish(ctx context.Context, topicName string, v I) error
 	}
 
-	MessageSubscrier[O Message] interface {
+	MessageSubscriber[O Message] interface {
 		Subscribe(topicName string, handler MessageHandler[O], options ...SubscriberOption) error
 	}
 
 	MessageStream[I any, O Message] interface {
-		MessagePulisher[I]
-		MessageSubscrier[O]
+		MessagePublisher[I]
+		MessageSubscriber[O]
 	}
 )
 

@@ -48,6 +48,7 @@ func (s *Stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMes
 	// retry a handful of times to publish the messages
 	go func(future nats.PubAckFuture, tries int) {
 		var err error
+
 		for {
 			select {
 			case <-future.Ok(): // publish acknowledged
@@ -71,26 +72,23 @@ func (s *Stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMes
 	return nil
 }
 
-func (s *Stream) Subscribe(topicName string, handler am.MessageHandler[am.RawMessage], options ...am.SubscriberOption) (err error) {
+func (s *Stream) Subscribe(topicName string, handler am.MessageHandler[am.RawMessage], options ...am.SubscriberOption) error {
+	var err error
+
 	subCfg := am.NewSubscriberConfig(options)
 
 	opts := []nats.SubOpt{
 		nats.MaxDeliver(subCfg.MaxRedeliver()),
 	}
-
 	cfg := &nats.ConsumerConfig{
 		MaxDeliver: subCfg.MaxRedeliver(),
 	}
-
 	if groupName := subCfg.GroupName(); groupName != "" {
 		cfg.DeliverSubject = groupName
 		cfg.DeliverGroup = groupName
 		cfg.Durable = groupName
 
-		opts = append(opts,
-			nats.Bind(s.streamName, groupName),
-			nats.Durable(groupName),
-		)
+		opts = append(opts, nats.Bind(s.streamName, groupName), nats.Durable(groupName))
 	}
 
 	if ackType := subCfg.AckType(); ackType != am.AckTypeAuto {
@@ -98,10 +96,8 @@ func (s *Stream) Subscribe(topicName string, handler am.MessageHandler[am.RawMes
 
 		cfg.AckPolicy = nats.AckExplicitPolicy
 		cfg.AckWait = ackWait
-		opts = append(opts,
-			nats.AckExplicit(),
-			nats.AckWait(ackWait),
-		)
+
+		opts = append(opts, nats.AckExplicit(), nats.AckWait(ackWait))
 	} else {
 		cfg.AckPolicy = nats.AckNonePolicy
 		opts = append(opts, nats.AckNone())

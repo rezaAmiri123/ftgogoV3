@@ -10,12 +10,12 @@ import (
 )
 
 type IntegrationEventHandlers[T ddd.AggregateEvent] struct {
-	publisher am.MessagePulisher[ddd.Event]
+	publisher am.MessagePublisher[ddd.Event]
 }
 
 var _ ddd.EventHandler[ddd.AggregateEvent] = (*IntegrationEventHandlers[ddd.AggregateEvent])(nil)
 
-func NewIntegrationEventHandlers(publisher am.MessagePulisher[ddd.Event]) *IntegrationEventHandlers[ddd.AggregateEvent] {
+func NewIntegrationEventHandlers(publisher am.MessagePublisher[ddd.Event]) *IntegrationEventHandlers[ddd.AggregateEvent] {
 	return &IntegrationEventHandlers[ddd.AggregateEvent]{
 		publisher: publisher,
 	}

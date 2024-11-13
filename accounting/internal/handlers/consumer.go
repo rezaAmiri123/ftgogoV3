@@ -17,6 +17,8 @@ func RegisterConsumerHandlers(consumerHandlers ddd.EventHandler[ddd.Event], subs
 		consumerpb.ConsumerRegisteredEvent,
 	}
 
-	return subscriber.Subscribe(consumerpb.ConsumerAggregateChannel, evtMsgHandler, msgFilters)
+	groupName := am.GroupName("account-consumer")
+
+	return subscriber.Subscribe(consumerpb.ConsumerAggregateChannel, evtMsgHandler, msgFilters, groupName)
 
 }
