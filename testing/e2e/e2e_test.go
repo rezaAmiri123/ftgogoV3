@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/cucumber/godog"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -15,6 +16,13 @@ import (
 var assist = assistdog.NewDefault()
 type lastResponseKey struct{}
 type lastErrorKey struct{}
+var randomString string
+func withRandomString(str string) string {
+	if str == "" {
+		return ""
+	}
+	return str + randomString
+}
 
 type featureConfig struct {
 }
@@ -84,6 +92,7 @@ func TestEndToEnd(t *testing.T) {
 				for _, f := range features {
 					f.reset()
 				}
+				randomString = fmt.Sprintf("%d", time.Now().UTC().UnixNano())
 				return ctx, nil
 			})
 		},

@@ -20,7 +20,7 @@ func NewKitchenRepository(conn *grpc.ClientConn) KitchenRepository {
 
 func (r KitchenRepository) CreateTicket(ctx context.Context, create domain.CreateTicket) error {
 	_, err := r.client.CreateTicket(ctx, &kitchenpb.CreateTicketRequest{
-		ID:           create.ID,
+		OrderID:      create.OrderID,
 		RestaurantID: create.RestaurantID,
 		LineItems:    r.toLineItemsProto(create.TicketDetail),
 	})

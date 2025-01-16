@@ -45,25 +45,25 @@ func NewOrder(id string) *Order {
 	}
 }
 
-func (o *Order) CreateOrder(consumerID, restaurantID string, lineItems []LineItem, deliverAt time.Time, deliverTo Address) error {
+func (o *Order) CreateOrder(consumerID, restaurantID string, lineItems []LineItem, deliverAt time.Time, deliverTo Address) (ddd.Event, error) {
 	if o.Status != UnknownOrderStatus {
-		return ErrOrderAlreadyCreated
+		return nil, ErrOrderAlreadyCreated
 	}
 
 	if consumerID == "" {
-		return ErrConsumerIDCannotBeBlank
+		return nil, ErrConsumerIDCannotBeBlank
 	}
 	if restaurantID == "" {
-		return ErrRestaurantIDCannotBeBlank
+		return nil, ErrRestaurantIDCannotBeBlank
 	}
 	if len(lineItems) == 0 {
-		return ErrLineItemsCannotBeBlank
+		return nil, ErrLineItemsCannotBeBlank
 	}
 	if deliverAt == (time.Time{}) {
-		return ErrDeliverAtCannotBeBlank
+		return nil, ErrDeliverAtCannotBeBlank
 	}
 	if deliverTo == (Address{}) {
-		return ErrDeliverToCannotBeBlank
+		return nil, ErrDeliverToCannotBeBlank
 	}
 	o.AddEvent(OrderCreatedEvent, &OrderCreated{
 		ConsumerID:   consumerID,
@@ -73,7 +73,7 @@ func (o *Order) CreateOrder(consumerID, restaurantID string, lineItems []LineIte
 		DeliverTo:    deliverTo,
 	})
 
-	return nil
+	return ddd.NewEvent(OrderCreatedEvent, o), nil
 }
 
 func (o *Order) OrderTotal() int {
@@ -85,7 +85,7 @@ func (o *Order) OrderTotal() int {
 	return total
 }
 
-func (o *Order) ApproveOrder(ticketID string) error {
+func (o *Order) ApproveOrder(ticketID string) (ddd.Event, error)  {
 	// if o.Status != ApprovalPending {
 	// 	return ErrOrderInvalidStatus
 	// }
@@ -94,7 +94,7 @@ func (o *Order) ApproveOrder(ticketID string) error {
 		TicketID: ticketID,
 	})
 
-	return nil
+	return ddd.NewEvent(OrderApprovedEvent, o), nil
 }
 
 func (o *Order) ApplyEvent(event ddd.Event) error {

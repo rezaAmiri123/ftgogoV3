@@ -128,7 +128,7 @@ func TestOrder_CreateOrder(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := &Order{Aggregate: aggregate}
 			o.Status = tt.orderStatus
-			err := o.CreateOrder(
+			event, err := o.CreateOrder(
 				tt.args.consumerID,
 				tt.args.restaurantID,
 				tt.args.lineItems,
@@ -140,6 +140,7 @@ func TestOrder_CreateOrder(t *testing.T) {
 				return
 			}
 			assert.Nil(t, tt.wantErr)
+			assert.NotNil(t, event)
 			assert.Len(t, o.Events(), 1)
 			assert.Equal(t, o.Events()[0].EventName(), OrderCreatedEvent)
 		})

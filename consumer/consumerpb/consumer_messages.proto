@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package consumerpb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/consumer/consumerpb";
+
+message AuthorizeCustomer {
+    string id = 1;
+    string order_id = 2;
+    int64 total_order = 3;
+}
+  

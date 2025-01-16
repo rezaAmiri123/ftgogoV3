@@ -19,7 +19,7 @@ message ConfirmCreateTicketRequest {
 message ConfirmCreateTicketResponse{}
 
 message CreateTicketRequest{
-  string ID = 1;
+  string OrderID = 1;
   string RestaurantID = 2;
   repeated LineItem LineItems =3;
 }

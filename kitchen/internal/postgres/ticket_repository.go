@@ -26,16 +26,16 @@ func NewTicketReopsitory(tableName string, db *sql.DB) TicketReopsitory {
 
 func (r TicketReopsitory) Save(ctx context.Context, ticket *domain.Ticket) error {
 	const query = `INSERT INTO %s 
-	(id, restaurant_id, line_items, accepted_at,preparing_time,ready_for_pick_up_at, 
+	(id, restaurant_id, order_id, line_items, accepted_at,preparing_time,ready_for_pick_up_at, 
 	picked_up_at,status, pervious_status) 
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 
 	lineItems, err := json.Marshal(ticket.LineItems)
 	if err != nil {
 		return errors.ErrInternalServerError.Err(err)
 	}
 
-	_, err = r.db.ExecContext(ctx, r.table(query), ticket.ID(), ticket.RestaurantID, lineItems,
+	_, err = r.db.ExecContext(ctx, r.table(query), ticket.ID(), ticket.RestaurantID, ticket.OrderID, lineItems,
 		ticket.AcceptedAt, ticket.PreparingTime, ticket.ReadyForPickUpAt, ticket.PickedUpAt,
 		ticket.Status.String(), ticket.PerviousStatus.String())
 
@@ -43,7 +43,7 @@ func (r TicketReopsitory) Save(ctx context.Context, ticket *domain.Ticket) error
 }
 
 func (r TicketReopsitory) Find(ctx context.Context, ticketID string) (*domain.Ticket, error) {
-	const query = `SELECT restaurant_id, line_items, accepted_at, preparing_time, ready_for_pick_up_at, 
+	const query = `SELECT restaurant_id, order_id, line_items, accepted_at, preparing_time, ready_for_pick_up_at, 
 	picked_up_at, status, pervious_status
 	from %s where id = $1 LIMIT 1`
 
@@ -55,6 +55,7 @@ func (r TicketReopsitory) Find(ctx context.Context, ticketID string) (*domain.Ti
 
 	err := r.db.QueryRowContext(ctx, r.table(query), ticketID).Scan(
 		&ticket.RestaurantID,
+		&ticket.OrderID,
 		&lineItems,
 		&ticket.AcceptedAt,
 		&ticket.PreparingTime,
@@ -77,7 +78,7 @@ func (r TicketReopsitory) Find(ctx context.Context, ticketID string) (*domain.Ti
 func (r TicketReopsitory) Update(ctx context.Context, ticket *domain.Ticket) error {
 	const query = `UPDATE %s SET 
 	restaurant_id = $2, line_items = $3, accepted_at = $4, preparing_time = $5,
-	ready_for_pick_up_at = $6, picked_up_at = $7, status = $8, pervious_status = $9
+	ready_for_pick_up_at = $6, picked_up_at = $7, status = $8, pervious_status = $9, order_id = $10
 	WHERE id = $1`
 
 	lineItems, err := json.Marshal(ticket.LineItems)
@@ -87,7 +88,7 @@ func (r TicketReopsitory) Update(ctx context.Context, ticket *domain.Ticket) err
 
 	_, err = r.db.ExecContext(ctx, r.table(query), ticket.ID(), ticket.RestaurantID, lineItems,
 		ticket.AcceptedAt, ticket.PreparingTime, ticket.ReadyForPickUpAt, ticket.PickedUpAt,
-		ticket.Status.String(), ticket.PerviousStatus.String(),
+		ticket.Status.String(), ticket.PerviousStatus.String(), ticket.OrderID,
 	)
 
 	return err

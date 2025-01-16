@@ -1,5 +1,5 @@
 package ddd
 
-type EventOption interface{
-	configureEvent(*event)
-}
+// type EventOption interface{
+// 	configureEvent(*event)
+// }

@@ -17,81 +17,88 @@ type (
 		ddd.Event
 	}
 
-	EventPublisher  = MessagePulisher[ddd.Event]
-	EventSubscriber = MessageSubscrier[EventMessage]
-	EventStream     = MessageStream[ddd.Event, EventMessage]
+	IncomingEventMessage interface {
+		IncomingMessage
+		ddd.Event
+	}
+
+	EventPublisher  = MessagePublisher[ddd.Event]
+	EventSubscriber = MessageSubscriber[IncomingEventMessage]
+	EventStream     = MessageStream[ddd.Event, IncomingEventMessage]
 
 	eventStream struct {
 		reg    registry.Registry
-		stream MessageStream[RawMessage, RawMessage]
+		stream RawMessageStream
 	}
 
 	eventMessage struct {
-		id        string
-		name      string
-		payload   ddd.EventPayload
-		metadata  ddd.Metadata
-		occurrdAt time.Time
-		msg       RawMessage
+		id         string
+		name       string
+		payload    ddd.EventPayload
+		metadata   ddd.Metadata
+		occurredAt time.Time
+		msg        IncomingMessage
 	}
 )
 
 var _ EventMessage = (*eventMessage)(nil)
+
 var _ EventStream = (*eventStream)(nil)
 
-func NewEventStream(reg registry.Registry, stream MessageStream[RawMessage, RawMessage])EventStream{
+func NewEventStream(reg registry.Registry, stream RawMessageStream) EventStream {
 	return &eventStream{
-		reg: reg,
+		reg:    reg,
 		stream: stream,
 	}
 }
 
-
-func(s eventStream)Publish(ctx context.Context, topicName string, event ddd.Event) error{
-	metadata,err := structpb.NewStruct(event.Metadata()) 
-	if err!= nil{
+func (s eventStream) Publish(ctx context.Context, topicName string, event ddd.Event) error {
+	metadata, err := structpb.NewStruct(event.Metadata())
+	if err != nil {
 		return err
 	}
 
-	payload,err := s.reg.Serialize(event.EventName(), event.Payload())
-	if err!= nil{
+	payload, err := s.reg.Serialize(
+		event.EventName(), event.Payload(),
+	)
+	if err != nil {
 		return err
 	}
 
-	data,err := proto.Marshal(&EventMessageData{
-		Payload: payload,
+	data, err := proto.Marshal(&EventMessageData{
+		Payload:    payload,
 		OccurredAt: timestamppb.New(event.OccurredAt()),
-		Metadata: metadata,
+		Metadata:   metadata,
 	})
-	if err!= nil{
+	if err != nil {
 		return err
 	}
 
-	return s.stream.Publish(ctx,topicName,rawMessage{
-		id: event.ID(),
+	return s.stream.Publish(ctx, topicName, rawMessage{
+		id:   event.ID(),
 		name: event.EventName(),
 		data: data,
 	})
 }
 
-func(s eventStream)Subscribe(topicName string, handler MessageHandler[EventMessage], options ...SubscriberOption) error{
+func (s eventStream) Subscribe(topicName string, handler MessageHandler[IncomingEventMessage], options ...SubscriberOption) error {
 	cfg := NewSubscriberConfig(options)
 
 	var filters map[string]struct{}
-	if len(cfg.MessageFilters())>0{
+	if len(cfg.MessageFilters()) > 0 {
 		filters = make(map[string]struct{})
-		for _, key := range cfg.MessageFilters(){
+		for _, key := range cfg.MessageFilters() {
 			filters[key] = struct{}{}
 		}
 	}
 
-	fn := MessageHandlerFunc[RawMessage](func(ctx context.Context, msg RawMessage) error{
+	fn := MessageHandlerFunc[IncomingRawMessage](func(ctx context.Context, msg IncomingRawMessage) error {
 		var eventData EventMessageData
 
-		if filters != nil{
-			if _, exists:=filters[msg.MessageName()];!exists{
+		if filters != nil {
+			if _, exists := filters[msg.MessageName()]; !exists {
 				return nil
-			} 
+			}
 		}
 
 		err := proto.Unmarshal(msg.Data(), &eventData)
@@ -101,30 +108,31 @@ func(s eventStream)Subscribe(topicName string, handler MessageHandler[EventMessa
 
 		eventName := msg.MessageName()
 
-		payload,err :=s.reg.Deserialize(eventName,eventData.GetPayload())
+		payload, err := s.reg.Deserialize(eventName, eventData.GetPayload())
 		if err != nil {
 			return err
 		}
 
 		eventMsg := eventMessage{
-			id: msg.ID(),
-			name: eventName,
-			payload: payload,
-			metadata: eventData.Metadata.AsMap(),
-			occurrdAt: eventData.OccurredAt.AsTime(),
-			msg: msg,
+			id:         msg.ID(),
+			name:       eventName,
+			payload:    payload,
+			metadata:   eventData.GetMetadata().AsMap(),
+			occurredAt: eventData.GetOccurredAt().AsTime(),
+			msg:        msg,
 		}
-		return handler.HandleMessage(ctx,eventMsg)
+
+		return handler.HandleMessage(ctx, eventMsg)
 	})
 
-	return s.stream.Subscribe(topicName,fn,options...)
+	return s.stream.Subscribe(topicName, fn, options...)
 }
 
 func (e eventMessage) ID() string                { return e.id }
 func (e eventMessage) EventName() string         { return e.name }
 func (e eventMessage) Payload() ddd.EventPayload { return e.payload }
 func (e eventMessage) Metadata() ddd.Metadata    { return e.metadata }
-func (e eventMessage) OccurredAt() time.Time     { return e.occurrdAt }
+func (e eventMessage) OccurredAt() time.Time     { return e.occurredAt }
 func (e eventMessage) MessageName() string       { return e.msg.MessageName() }
 func (e eventMessage) Ack() error                { return e.msg.Ack() }
 func (e eventMessage) NAck() error               { return e.msg.NAck() }

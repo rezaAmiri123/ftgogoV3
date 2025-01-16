@@ -3,7 +3,6 @@ package e2e
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"github.com/cucumber/godog"
 	"github.com/rezaAmiri123/ftgogoV3/customer-web/customerapi"
@@ -27,11 +26,11 @@ func (f *orderFeature) init(cfg featureConfig) (err error) {
 }
 
 func (f *orderFeature) reset() {
-	deleteTable := func(tableName string) {
-		_, _ = f.db.Exec(fmt.Sprintf("DELETE from %s", tableName))
-	}
+	// deleteTable := func(tableName string) {
+	// 	_, _ = f.db.Exec(fmt.Sprintf("DELETE from %s", tableName))
+	// }
 
-	deleteTable("orders.orders")
+	// deleteTable("orders.orders")
 }
 
 func (f *orderFeature) register(ctx *godog.ScenarioContext) {
@@ -49,11 +48,11 @@ func (f *orderFeature) iCreateANewOrder(ctx context.Context) context.Context {
 	if err != nil {
 		return ctx
 	}
-
+	id := withRandomString("1")
 	response, err := f.client.CreateOrder(ctx, customerapi.CreateOrderJSONRequestBody{
-		AddressId: "1",
-		ConsumerId: consumerID,
-		LineItems: customerapi.MenuItemQuantities{"1":1},
+		AddressId:    id,
+		ConsumerId:   consumerID,
+		LineItems:    customerapi.MenuItemQuantities{id: 1},
 		RestaurantId: restaurantID,
 	}, tokenHeader())
 

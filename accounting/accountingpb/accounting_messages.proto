@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package accountingpb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/accountng/accountingpb";
+
+message AuthorizeAccount {
+    string account_id = 1;
+    string order_id = 2;
+    int64 total_order = 3;
+}
+  

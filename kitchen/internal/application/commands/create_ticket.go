@@ -9,6 +9,7 @@ import (
 
 type CreateTicket struct {
 	ID           string
+	OrderID      string
 	RestaurantID string
 	LineItems    []domain.LineItem
 }
@@ -24,7 +25,7 @@ func NewCreateTicketHandler(tickets domain.TicketRepository) CreateTicketHandler
 }
 
 func (h CreateTicketHandler) CreateTicket(ctx context.Context, cmd CreateTicket) error {
-	ticket, err := domain.CreateTicket(cmd.ID, cmd.RestaurantID, cmd.LineItems)
+	ticket, err := domain.CreateTicket(cmd.ID, cmd.RestaurantID, cmd.OrderID, cmd.LineItems)
 	if err != nil {
 		return err
 	}

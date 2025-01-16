@@ -6,6 +6,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "ftgogo" <<-EOSQL
 
     CREATE TABLE kitchen.tickets(
         id                   text NOT NULL,
+        order_id             text NOT NULL,
         restaurant_id        text NOT NULL,
         line_items           bytea NOT NULL,
         accepted_at          timestamptz NOT NULL,

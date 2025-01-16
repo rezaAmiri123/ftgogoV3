@@ -29,10 +29,10 @@ func (c *consumerFeature) init(cfg featureConfig) (err error) {
 }
 
 func (c *consumerFeature) reset() {
-	deleteTable := func(tableName string) {
-		_, _ = c.db.Exec(fmt.Sprintf("DELETE from %s", tableName))
-	}
-	deleteTable("consumer.consumers")
+	// deleteTable := func(tableName string) {
+	// 	_, _ = c.db.Exec(fmt.Sprintf("DELETE from %s", tableName))
+	// }
+	// deleteTable("consumer.consumers")
 }
 
 func (c *consumerFeature) register(ctx *godog.ScenarioContext) {
@@ -52,11 +52,13 @@ func (c *consumerFeature) iExpectTheConsumrIsCreated(ctx context.Context) error 
 }
 
 func (c *consumerFeature) iRegisterANewConsumerAs(ctx context.Context, name string) context.Context {
+	name = withRandomString(name)
 	ctx, _ = c.registerConsumer(ctx, name)
 	return ctx
 }
 
 func (c *consumerFeature) noConsumerNamedExists(name string) error {
+	name = withRandomString(name)
 	var consumerID string
 	row := c.db.QueryRow("SELECT id FROM consumer.consumers WHERE name = $1", name)
 	err := row.Scan(&consumerID)
@@ -69,6 +71,7 @@ func (c *consumerFeature) noConsumerNamedExists(name string) error {
 }
 
 func (c *consumerFeature) registerConsumer(ctx context.Context, name string) (context.Context, error) {
+	name = withRandomString(name)
 	response, err := c.client.RegisterConsumer(ctx, customerapi.RegisterConsumerJSONRequestBody{
 		Name: name,
 	})
@@ -96,8 +99,9 @@ func tokenHeader() func(ctx context.Context, req *http.Request) error {
 	}
 }
 func (c *consumerFeature) iAddAddressToConsumer(ctx context.Context) context.Context {
+	name := withRandomString("1")
 	response, err := c.client.AddConsumerAddress(ctx, customerapi.AddConsumerAddressJSONRequestBody{
-		Name: "1",
+		Name: name,
 		Address: customerapi.Address{
 			Street1: "street1",
 		},
@@ -118,7 +122,8 @@ func (c *consumerFeature) iAddAddressToConsumer(ctx context.Context) context.Con
 }
 
 func (c *consumerFeature) iAmARegisteredConsumer(ctx context.Context) context.Context {
-	ctx, _ = c.registerConsumer(ctx, "name")
+	name := withRandomString("name")
+	ctx, _ = c.registerConsumer(ctx, name)
 	return ctx
 }
 

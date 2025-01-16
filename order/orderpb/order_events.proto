@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package orderpb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/order/orderpb";
+import "orderpb/order_api.proto";
+
+message OrderCreated {
+    message Item {
+      string menu_item_id = 1;
+      string name = 2;
+      int64 price = 3;
+      int64 quantity = 4;
+    }
+
+    string OrderID = 1;
+    string ConsumerID = 2;
+    string RestaurantID = 3;
+    int64 OrderTotal = 4;
+    string Status = 5;
+    repeated Item items = 6;
+    orderpb.Address address = 7;
+}
+  
+// Command
+message ApproveOrder {
+  string OrderID = 1;
+  string TicketID = 2;
+}
+
+message RejectOrder {
+  string OrderID = 1;
+}

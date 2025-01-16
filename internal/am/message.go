@@ -10,32 +10,36 @@ type (
 	Message interface {
 		ddd.IDer
 		MessageName() string
+	}
+
+	IncomingMessage interface {
+		Message
 		Ack() error
 		NAck() error
 		Extend() error
 		Kill() error
 	}
 
-	MessageHandler[O Message] interface {
-		HandleMessage(ctx context.Context, msg O) error
+	MessageHandler[I IncomingMessage] interface {
+		HandleMessage(ctx context.Context, msg I) error
 	}
 
-	MessageHandlerFunc[O Message] func(ctx context.Context, msg O) error
+	MessageHandlerFunc[I IncomingMessage] func(ctx context.Context, msg I) error
 
-	MessagePulisher[I any] interface {
-		Publish(ctx context.Context, topicName string, v I) error
+	MessagePublisher[O any] interface {
+		Publish(ctx context.Context, topicName string, v O) error
 	}
 
-	MessageSubscrier[O Message] interface {
-		Subscribe(topicName string, handler MessageHandler[O], options ...SubscriberOption) error
+	MessageSubscriber[I IncomingMessage] interface {
+		Subscribe(topicName string, handler MessageHandler[I], options ...SubscriberOption) error
 	}
 
-	MessageStream[I any, O Message] interface {
-		MessagePulisher[I]
-		MessageSubscrier[O]
+	MessageStream[O any, I IncomingMessage] interface {
+		MessagePublisher[O]
+		MessageSubscriber[I]
 	}
 )
 
-func (f MessageHandlerFunc[O]) HandleMessage(ctx context.Context, msg O) error {
+func (f MessageHandlerFunc[I]) HandleMessage(ctx context.Context, msg I) error {
 	return f(ctx, msg)
 }

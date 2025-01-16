@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package kitchenpb;
+option go_package = "github.com/rezaAmiri123/ftgogoV3/kitchen/kitchenpb";
+
+import "google/protobuf/timestamp.proto";
+
+// Events
+message TicketAccepted{
+    string TicketID = 1;
+    string OrderID = 2;
+    google.protobuf.Timestamp AcceptedAt = 3;
+    google.protobuf.Timestamp ReadyBy = 4;
+
+}
+
+// commands
+message CreateTicket {
+    message LineItem {
+        string MenuItemID = 1;
+        string Name = 2;
+        int64 Quantity = 3;
+      }      
+    string OrderID = 1;
+    string RestaurantID = 2;
+    repeated LineItem Items = 3;
+}
+
+message ConfirmCreateTicket {
+    string TicketID = 1;
+}
+
+message CancelCreateTicket {
+    string TicketID = 1;
+}
+
+
+// Replies
+message CreatedTicket{
+    string id = 1;
+}

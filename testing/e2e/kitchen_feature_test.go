@@ -3,7 +3,6 @@ package e2e
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/cucumber/godog"
@@ -29,10 +28,10 @@ func (f *kitchenFeature) init(cfg featureConfig) (err error) {
 }
 
 func (f *kitchenFeature) reset() {
-	deleteTable := func(tableName string) {
-		_, _ = f.db.Exec(fmt.Sprintf("DELETE from %s", tableName))
-	}
-	deleteTable("kitchen.tickets")
+	// deleteTable := func(tableName string) {
+	// 	_, _ = f.db.Exec(fmt.Sprintf("DELETE from %s", tableName))
+	// }
+	// deleteTable("kitchen.tickets")
 }
 
 func (f *kitchenFeature) register(ctx *godog.ScenarioContext) {

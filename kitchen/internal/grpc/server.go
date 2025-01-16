@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/application/commands"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/application/queries"
@@ -24,15 +25,18 @@ func RegisterServer(app application.App, register grpc.ServiceRegistrar) error {
 }
 
 func (s server) CreateTicket(ctx context.Context, request *kitchenpb.CreateTicketRequest) (*kitchenpb.CreateTicketResponse, error) {
+	id := uuid.New().String()
+
 	err := s.app.CreateTicket(ctx, commands.CreateTicket{
-		ID:           request.GetID(),
+		ID:           id,
+		OrderID:      request.GetOrderID(),
 		RestaurantID: request.GetRestaurantID(),
 		LineItems:    s.toLineItemsDomain(request.GetLineItems()),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &kitchenpb.CreateTicketResponse{TicketID: request.GetID()}, nil
+	return &kitchenpb.CreateTicketResponse{TicketID: id}, nil
 }
 
 func (s server) GetTicket(ctx context.Context, request *kitchenpb.GetTicketRequest) (*kitchenpb.GetTicketResponse, error) {

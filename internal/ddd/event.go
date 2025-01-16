@@ -7,7 +7,11 @@ import (
 )
 
 type (
-	EventPayload any
+	EventOption interface {
+		configureEvent(*event)
+	}
+
+	EventPayload interface{}
 
 	Event interface {
 		IDer
@@ -27,7 +31,7 @@ type (
 
 var _ Event = (*event)(nil)
 
-func NewEvent(name string, payload EventPayload, options ...EventOption) event {
+func NewEvent(name string, payload EventPayload, options ...EventOption) Event {
 	return newEvent(name, payload, options...)
 }
 

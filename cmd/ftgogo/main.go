@@ -15,6 +15,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/rezaAmiri123/ftgogoV3/accounting"
 	"github.com/rezaAmiri123/ftgogoV3/consumer"
+	"github.com/rezaAmiri123/ftgogoV3/cosec"
 	customerweb "github.com/rezaAmiri123/ftgogoV3/customer-web"
 	"github.com/rezaAmiri123/ftgogoV3/delivery"
 	"github.com/rezaAmiri123/ftgogoV3/internal/config"
@@ -86,6 +87,7 @@ func run() (err error) {
 		&kitchen.Module{},
 		&delivery.Module{},
 		&order.Module{},
+		&cosec.Module{},
 		&customerweb.Module{},
 		&storeweb.Module{},
 	}

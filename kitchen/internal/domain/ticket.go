@@ -20,6 +20,7 @@ var (
 type Ticket struct {
 	ddd.Aggregate
 	RestaurantID     string
+	OrderID          string
 	LineItems        []LineItem
 	ReadyBy          time.Time
 	AcceptedAt       time.Time
@@ -38,7 +39,7 @@ func NewTicket(id string) *Ticket {
 	}
 }
 
-func CreateTicket(id, restaurantID string, lineItems []LineItem) (*Ticket, error) {
+func CreateTicket(id, restaurantID, orderID string, lineItems []LineItem) (*Ticket, error) {
 	if id == "" {
 		return nil, ErrTicketIDCannotBeBlank
 	}
@@ -49,6 +50,7 @@ func CreateTicket(id, restaurantID string, lineItems []LineItem) (*Ticket, error
 		return nil, ErrLineItemsCannotBeEmpty
 	}
 	ticket := NewTicket(id)
+	ticket.OrderID = orderID
 	ticket.RestaurantID = restaurantID
 	ticket.LineItems = lineItems
 	ticket.Status = CreatePending

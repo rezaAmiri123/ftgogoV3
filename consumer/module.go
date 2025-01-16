@@ -29,20 +29,10 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 	if err = consumerpb.Registration(reg); err != nil {
 		return err
 	}
-	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
-	if err != nil {
-		return err
-	}
 
-	accounts := grpc.NewAccountRepository(conn)
-	accountHandlers := logging.LogEventHandlersAccess(
-		application.NewAccountHandlers(accounts),
-		"Consumer",
-		mono.Logger(),
-	)
-
-	jsStream := jetstream.NewStream(mono.Config().Nats.Stream, mono.JS())
+	jsStream := jetstream.NewStream(mono.Config().Nats.Stream, mono.JS(), mono.Logger())
 	eventStream := am.NewEventStream(reg, jsStream)
+	commandStream := am.NewCommandStream(reg, jsStream)
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
 	consumers := postgres.NewConsumerReopsitory("consumer.consumers", mono.DB())
 
@@ -51,18 +41,27 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 	app = logging.LogApplicationAccess(app, mono.Logger())
 
 	// setup application handlers
-	integrationEventHandlers := logging.LogEventHandlersAccess[ddd.AggregateEvent](
-		application.NewIntegrationEventHandlers(eventStream),
-		"Consumer",
-		mono.Logger(),
+	domainEventHandlers := logging.LogEventHandlersAccess[ddd.AggregateEvent](
+		handlers.NewDomainEventHandlers(eventStream),
+		"DomainEvents", mono.Logger(),
 	)
-
+	commandHandlers := logging.LogCommandHandlerAccess[ddd.Command](
+		handlers.NewCommandHandlers(app),
+		"Commands", mono.Logger(),
+	)
 	// setup Driver adapters
 	if err := grpc.RegisterServer(app, mono.RPC()); err != nil {
 		return err
 	}
-	handlers.RegisterAccountHandlers(accountHandlers, domainDispatcher)
-	handlers.RegisterIntegrationEventHandlers(integrationEventHandlers,domainDispatcher)
+	// handlers.RegisterAccountHandlers(accountHandlers, domainDispatcher)
+	handlers.RegisterDomainEventHandlers(domainDispatcher, domainEventHandlers)
+	if err = handlers.RegisterCommandHandlers(commandStream, commandHandlers); err != nil {
+		return err
+	}
+	if err = consumerpb.RegisterAsyncAPI(mono.Mux()); err != nil {
+		return err
+	}
+
 	return nil
 }
 

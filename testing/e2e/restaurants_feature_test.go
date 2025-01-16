@@ -28,10 +28,10 @@ func (f *restaurantFeature) init(cfg featureConfig) (err error) {
 }
 
 func (f *restaurantFeature) reset() {
-	deleteTable := func(tableName string) {
-		_, _ = f.db.Exec(fmt.Sprintf("DELETE from %s", tableName))
-	}
-	deleteTable("restaurant.restaurants")
+	// deleteTable := func(tableName string) {
+	// 	_, _ = f.db.Exec(fmt.Sprintf("DELETE from %s", tableName))
+	// }
+	// deleteTable("restaurant.restaurants")
 }
 
 func (f *restaurantFeature) register(ctx *godog.ScenarioContext) {
@@ -52,8 +52,9 @@ func (f *restaurantFeature) iCreateANewRestarant(ctx context.Context) context.Co
 	// }
 
 	// return context.WithValue(ctx, restaurantIDKey{}, "ea7ac1aa-b14b-4904-bfb7-bb91e2fe6920")
+	name := withRandomString("name")
 	response, err := f.client.CreateRestaurant(ctx, storeapi.CreateRestaurantJSONRequestBody{
-		Name: "name",
+		Name: name,
 		Address: storeapi.Address{Street1: "street1"},
 	},tokenHeader())
 	ctx = setLastResponseError(ctx, response, err)
@@ -71,12 +72,14 @@ func (f *restaurantFeature) iCreateANewRestarant(ctx context.Context) context.Co
 
 }
 func (f *restaurantFeature) iUpdateTheRestarantMenu(ctx context.Context) context.Context {
+	name := withRandomString("name")
+	id := withRandomString("1")
 	restaurantID,_ := lastRestaurantID(ctx)
 	restaurantUUID , err := uuid.Parse(restaurantID)
 	response, err := f.client.UpdateRestaurantMenu(ctx, restaurantUUID,storeapi.UpdateRestaurantMenuJSONRequestBody{
 		Menu: struct{MenuItems []storeapi.MenuItem "json:\"menu_items\""}{MenuItems: []storeapi.MenuItem{storeapi.MenuItem{
-			Id: "1",
-			Name: "name",
+			Id: id,
+			Name: name,
 			Price: 1,
 		}}},
 	},tokenHeader())

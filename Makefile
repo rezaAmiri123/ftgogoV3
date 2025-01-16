@@ -8,8 +8,8 @@ docker-build-monolith:
 
 docker-run-monolith:
 	docker compose --profile monolith up
-docker-rm-volume:
-	docker volume rm ftgogov3_pgdata
+docker-rm-volume-pgdata:
+	docker volume rm ftgogov3_pgdata ftgogov3_jsdata
 docker-run:
 	docker compose up
 run-dev:
