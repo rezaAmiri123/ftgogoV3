@@ -21,10 +21,11 @@ func NewIntegrationHandlers(app application.App) ddd.EventHandler[ddd.Event] {
 	}
 }
 
-func RegisterIntegrationEventHandlers(subscriber am.EventSubscriber, handlers ddd.EventHandler[ddd.Event]) (err error) {
-	evtMsgHandler := am.MessageHandlerFunc[am.IncomingEventMessage](func(ctx context.Context, eventMsg am.IncomingEventMessage) error {
-		return handlers.HandleEvent(ctx, eventMsg)
+func RegisterIntegrationEventHandlers(subscriber am.RawMessageStream, handlers am.RawMessageHandler) (err error) {
+	evtMsgHandler := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.IncomingRawMessage) error {
+		return handlers.HandleMessage(ctx, msg)
 	})
+
 
 	return subscriber.Subscribe(consumerpb.ConsumerAggregateChannel, evtMsgHandler, am.MessageFilter{
 		consumerpb.ConsumerRegisteredEvent,

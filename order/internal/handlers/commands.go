@@ -20,9 +20,9 @@ func NewCommandHandlers(app application.App) ddd.CommandHandler[ddd.Command] {
 	}
 }
 
-func RegisterCommandHandlers(subscriber am.CommandSubscriber, handlers ddd.CommandHandler[ddd.Command]) error {
-	cmdMsgHandler := am.CommandMessageHandlerFunc(func(ctx context.Context, msg am.IncomingCommandMessage) (ddd.Reply, error) {
-		return handlers.HandleCommand(ctx, msg)
+func RegisterCommandHandlers(subscriber am.RawMessageStream, handlers am.RawMessageHandler) error {
+	cmdMsgHandler := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.IncomingRawMessage) (err error) {
+		return handlers.HandleMessage(ctx, msg)
 	})
 
 	return subscriber.Subscribe(orderpb.CommandChannel, cmdMsgHandler, am.MessageFilter{

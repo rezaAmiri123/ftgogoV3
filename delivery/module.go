@@ -13,7 +13,9 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/internal/jetstream"
 	"github.com/rezaAmiri123/ftgogoV3/internal/monolith"
+	pg "github.com/rezaAmiri123/ftgogoV3/internal/postgres"
 	"github.com/rezaAmiri123/ftgogoV3/internal/registry"
+	"github.com/rezaAmiri123/ftgogoV3/internal/tm"
 	"github.com/rezaAmiri123/ftgogoV3/order/orderpb"
 )
 
@@ -33,7 +35,14 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 	}
 
 	jsStream := jetstream.NewStream(mono.Config().Nats.Stream, mono.JS(), mono.Logger())
-	eventStream := am.NewEventStream(reg, jsStream)
+	outboxStore := pg.NewOutboxStore("delivery.outbox", mono.DB())
+	inboxStore := pg.NewInboxStore("delivery.inbox", mono.DB())
+	inboxHandlerMiddleware := tm.NewInboxHandlerMiddleware(inboxStore)
+	stream := am.RawMessageStreamWithMiddleware(
+		jsStream,
+		tm.NewOutboxStreamMiddleware(outboxStore),
+	)
+
 	deliveries := postgres.NewDeliveryRepository("delivery.deliveries", mono.DB())
 	couriers := postgres.NewCourierRepository("delivery.couriers", mono.DB())
 	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
@@ -55,9 +64,20 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 		handlers.NewIntegrationHandlers(app),
 		"IntegrationEvents", mono.Logger(),
 	)
+	eventMsgHandlers := am.NewEventMessageHandler(reg, integrationEventHandlers)
+	msgHandlerMiddleware := am.RawMessageHandlerWithMiddleware(eventMsgHandlers, inboxHandlerMiddleware)
 
-	if err = handlers.RegisterIntegrationEventHandlers(eventStream, integrationEventHandlers); err != nil {
+	if err = handlers.RegisterIntegrationEventHandlers(stream, msgHandlerMiddleware); err != nil {
 		return err
 	}
+
+	outboxProcessor := tm.NewOutboxProcessor(jsStream, pg.NewOutboxStore("delivery.outbox", mono.DB()))
+	go func() {
+		if err := outboxProcessor.Start(ctx); err != nil {
+			logger := mono.Logger()
+			logger.Error().Err(err).Msg("order outbox processor encountered an error")
+		}
+	}()
+
 	return nil
 }

@@ -5,6 +5,7 @@ import "github.com/rezaAmiri123/ftgogoV3/internal/am"
 type rawMessage struct {
 	id       string
 	name     string
+	subject  string
 	data     []byte
 	acked    bool
 	ackFn    func() error
@@ -16,6 +17,7 @@ type rawMessage struct {
 var _ am.RawMessage = (*rawMessage)(nil)
 
 func (m rawMessage) ID() string          { return m.id }
+func (m rawMessage) Subject() string     { return m.subject }
 func (m rawMessage) MessageName() string { return m.name }
 func (m rawMessage) Data() []byte        { return m.data }
 

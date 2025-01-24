@@ -46,6 +46,28 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "ftgogo" <<-EOSQL
   
     CREATE TRIGGER updated_at_snapshots_trgr BEFORE UPDATE ON orders.snapshots FOR EACH ROW EXECUTE PROCEDURE updated_at_trigger();
 
+    CREATE TABLE orders.inbox
+    (
+      id          text NOT NULL,
+      name        text NOT NULL,
+      subject     text NOT NULL,
+      data        bytea NOT NULL,
+      received_at timestamptz NOT NULL,
+      PRIMARY KEY (id)
+    );
+  
+    CREATE TABLE orders.outbox
+    (
+      id           text NOT NULL,
+      name         text NOT NULL,
+      subject      text NOT NULL,
+      data         bytea NOT NULL,
+      published_at timestamptz,
+      PRIMARY KEY (id)
+    );
+  
+    CREATE INDEX orders_unpublished_idx ON orders.outbox (published_at) WHERE published_at IS NULL;
+
     GRANT USAGE ON SCHEMA orders TO ftgogo_user;
     GRANT INSERT, UPDATE, DELETE, SELECT ON ALL TABLES IN SCHEMA orders TO ftgogo_user;
 EOSQL

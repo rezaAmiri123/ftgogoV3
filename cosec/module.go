@@ -14,9 +14,11 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/internal/jetstream"
 	"github.com/rezaAmiri123/ftgogoV3/internal/monolith"
 	"github.com/rezaAmiri123/ftgogoV3/internal/postgres"
+	pg "github.com/rezaAmiri123/ftgogoV3/internal/postgres"
 	"github.com/rezaAmiri123/ftgogoV3/internal/registry"
 	"github.com/rezaAmiri123/ftgogoV3/internal/registry/serdes"
 	"github.com/rezaAmiri123/ftgogoV3/internal/sec"
+	"github.com/rezaAmiri123/ftgogoV3/internal/tm"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/kitchenpb"
 	"github.com/rezaAmiri123/ftgogoV3/order/orderpb"
 	"github.com/stackus/errors"
@@ -50,12 +52,17 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 	}
 
 	jsStream := jetstream.NewStream(mono.Config().Nats.Stream, mono.JS(), mono.Logger())
-	eventStream := am.NewEventStream(reg, jsStream)
-	commandStream := am.NewCommandStream(reg, jsStream)
-	replyStream := am.NewReplyStream(reg, jsStream)
+	outboxStore := pg.NewOutboxStore("cosec.outbox", mono.DB())
+	inboxStore := pg.NewInboxStore("cosec.inbox", mono.DB())
+	inboxHandlerMiddleware := tm.NewInboxHandlerMiddleware(inboxStore)
+	stream := am.RawMessageStreamWithMiddleware(
+		jsStream,
+		tm.NewOutboxStreamMiddleware(outboxStore),
+	)
+	commandStream := am.NewCommandStream(reg, stream)
 	sagaStore := postgres.NewSagaStore("cosec.sagas", mono.DB(), reg)
 	sagaRepo := sec.NewSagaRepository[*models.CreateOrderData](reg, sagaStore)
-	
+
 	// setup application
 	orchestrator := logging.LogReplyHandlersAccess[*models.CreateOrderData](
 		sec.NewOrchestrator[*models.CreateOrderData](internal.NewCreateOrderSaga(), sagaRepo, commandStream),
@@ -66,15 +73,27 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 		handlers.NewIntegrationEventHandlers(orchestrator),
 		"IntegrationEvents", mono.Logger(),
 	)
-	
+	evtMsgHandlers := am.NewEventMessageHandler(reg, integrationEventHandlers)
+	msgEvtHandlerMiddleware := am.RawMessageHandlerWithMiddleware(evtMsgHandlers, inboxHandlerMiddleware)
+
 	// setup driver adapters
-	if err = handlers.RegisterIntegrationEventHandlers(eventStream, integrationEventHandlers); err != nil {
+	if err = handlers.RegisterIntegrationEventHandlers(stream, msgEvtHandlerMiddleware); err != nil {
+		return err
+	}
+
+	replyMsgHandlers := am.NewReplyMessageHandler(reg,orchestrator)
+	msgReplyHandlerMiddleware := am.RawMessageHandlerWithMiddleware(replyMsgHandlers, inboxHandlerMiddleware)
+	if err = handlers.RegisterReplyHandlers(stream, msgReplyHandlerMiddleware); err != nil {
 		return err
 	}
 	
-	if err = handlers.RegisterReplyHandlers(replyStream, orchestrator); err != nil {
-		return err
-	}
+	outboxProcessor := tm.NewOutboxProcessor(jsStream, pg.NewOutboxStore("cosec.outbox", mono.DB()))
+	go func() {
+		if err := outboxProcessor.Start(ctx); err != nil {
+			logger := mono.Logger()
+			logger.Error().Err(err).Msg("order outbox processor encountered an error")
+		}
+	}()
 
 	return nil
 }

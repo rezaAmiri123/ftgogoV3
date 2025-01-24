@@ -24,9 +24,9 @@ func NewIntegrationHandlers(app application.App) ddd.EventHandler[ddd.Event] {
 	}
 }
 
-func RegisterIntegrationEventHandlers(subscriber am.EventSubscriber, handlers ddd.EventHandler[ddd.Event]) (err error) {
-	evtMsgHandler := am.MessageHandlerFunc[am.IncomingEventMessage](func(ctx context.Context, msg am.IncomingEventMessage) error {
-		return handlers.HandleEvent(ctx, msg)
+func RegisterIntegrationEventHandlers(subscriber am.RawMessageStream, handlers am.RawMessageHandler) (err error) {
+	evtMsgHandler := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.IncomingRawMessage) error {
+		return handlers.HandleMessage(ctx, msg)
 	})
 
 	err = subscriber.Subscribe(kitchenpb.TicketAggregateChannel, evtMsgHandler, am.MessageFilter{

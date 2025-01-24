@@ -43,7 +43,7 @@ func (s *Stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMes
 
 	var p nats.PubAckFuture
 	p, err = s.js.PublishMsgAsync(&nats.Msg{
-		Subject: topicName,
+		Subject: rawMsg.Subject(),
 		Data:    data,
 	}, nats.MsgId(rawMsg.ID()))
 	if err != nil {
@@ -129,6 +129,14 @@ func (s *Stream) Subscribe(topicName string, handler am.RawMessageHandler, optio
 }
 
 func (s *Stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler) func(*nats.Msg) {
+	var filters map[string]struct{}
+	if len(cfg.MessageFilters()) > 0 {
+		filters = make(map[string]struct{})
+		for _, key := range cfg.MessageFilters() {
+			filters[key] = struct{}{}
+		}
+	}
+
 	return func(natsMsg *nats.Msg) {
 		var err error
 
@@ -139,9 +147,20 @@ func (s *Stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler
 			return
 		}
 
+		if filters != nil {
+			if _, exists := filters[m.GetName()]; !exists {
+				err = natsMsg.Ack()
+				if err != nil {
+					s.logger.Warn().Err(err).Msg("failed to ack filtered message")
+				}
+				return
+			}
+		}
+		
 		msg := &rawMessage{
 			id:       m.GetId(),
 			name:     m.GetName(),
+			subject:  natsMsg.Subject,
 			data:     m.GetData(),
 			acked:    false,
 			ackFn:    func() error { return natsMsg.Ack() },
