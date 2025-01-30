@@ -26,10 +26,11 @@ func RegisterIntegrationEventHandlers(subscriber am.RawMessageStream, handlers a
 	evtMsgHandler := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.IncomingRawMessage) error {
 		return handlers.HandleMessage(ctx, msg)
 	})
-	
-	return subscriber.Subscribe(orderpb.OrderAggregateChannel, evtMsgHandler, am.MessageFilter{
+
+	_, err = subscriber.Subscribe(orderpb.OrderAggregateChannel, evtMsgHandler, am.MessageFilter{
 		orderpb.OrderCreatedEvent,
 	}, am.GroupName("cosec-orders"))
+	return err
 }
 
 func (h integrationHandlers[T]) HandleEvent(ctx context.Context, event T) error {

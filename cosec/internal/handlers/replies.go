@@ -12,5 +12,6 @@ func RegisterReplyHandlers(subscriber am.RawMessageStream, replyHandlers am.RawM
 		return replyHandlers.HandleMessage(ctx, msg)
 	})
 
-	return subscriber.Subscribe(internal.CreateOrderReplyChannel, replyMsgHandler, am.GroupName("cosec-replies"))
+	_, err = subscriber.Subscribe(internal.CreateOrderReplyChannel, replyMsgHandler, am.GroupName("cosec-replies"))
+	return err
 }

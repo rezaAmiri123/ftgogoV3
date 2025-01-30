@@ -26,10 +26,10 @@ func RegisterIntegrationEventHandlers(subscriber am.RawMessageStream, handlers a
 		return handlers.HandleMessage(ctx, msg)
 	})
 
-
-	return subscriber.Subscribe(consumerpb.ConsumerAggregateChannel, evtMsgHandler, am.MessageFilter{
+	_, err = subscriber.Subscribe(consumerpb.ConsumerAggregateChannel, evtMsgHandler, am.MessageFilter{
 		consumerpb.ConsumerRegisteredEvent,
 	}, am.GroupName("accounting-consumer"))
+	return err
 }
 
 func (h integrationHandlers[T]) HandleEvent(ctx context.Context, event T) error {

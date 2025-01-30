@@ -14,8 +14,11 @@ type (
 
 	Registry interface {
 		Serialize(key string, v any) ([]byte, error)
+		MustSerialize(key string, v any) []byte
 		Build(key string, options ...BuildOption) (any, error)
+		MustBuild(key string, options ...BuildOption) any
 		Deserialize(key string, data []byte, options ...BuildOption) (any, error)
+		MustDeserialize(key string, data []byte, options ...BuildOption) any
 		register(key string, fn func() any, s Serializer, d Deserializer, o []BuildOption) error
 	}
 )
@@ -48,6 +51,14 @@ func (r *registry) Serialize(key string, v any) ([]byte, error) {
 	return reg.serializer(v)
 }
 
+func (r *registry) MustSerialize(key string, v any) []byte {
+	data, err := r.Serialize(key, v)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
 func (r *registry) Build(key string, options ...BuildOption) (any, error) {
 	reg, exists := r.registered[key]
 	if !exists {
@@ -66,33 +77,49 @@ func (r *registry) Build(key string, options ...BuildOption) (any, error) {
 	return v, nil
 }
 
+func (r *registry) MustBuild(key string, options ...BuildOption) any {
+	v, err := r.Build(key, options...)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
 func (r *registry) Deserialize(key string, data []byte, options ...BuildOption) (any, error) {
-	v,err := r.Build(key,options...)
-	if err!= nil{
+	v, err := r.Build(key, options...)
+	if err != nil {
 		return nil, err
 	}
 
-	err = r.registered[key].deserializer(data,v)
-	if err!= nil{
-		return nil,err
+	err = r.registered[key].deserializer(data, v)
+	if err != nil {
+		return nil, err
 	}
 
-	return v,err
+	return v, err
+}
+
+func (r *registry) MustDeserialize(key string, data []byte, options ...BuildOption) any {
+	v, err := r.Deserialize(key, data, options...)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
 
 func (r *registry) register(key string, fn func() any, s Serializer, d Deserializer, o []BuildOption) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if _, exists := r.registered[key];exists{
+	if _, exists := r.registered[key]; exists {
 		return AlreadyRegisteredKey(key)
 	}
 
 	r.registered[key] = registered{
-		factory: fn,
-		serializer: s,
+		factory:      fn,
+		serializer:   s,
 		deserializer: d,
-		options: o,
+		options:      o,
 	}
 
 	return nil

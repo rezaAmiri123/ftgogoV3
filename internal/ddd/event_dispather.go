@@ -65,9 +65,9 @@ func (h *EventDispatcher[T]) Publish(ctx context.Context, events ...T) error {
 	for _, event := range events {
 		for _, handler := range h.handlers {
 			if handler.filters != nil {
-				if _, exists := handler.filters[event.EventName()];!exists{
+				if _, exists := handler.filters[event.EventName()]; !exists {
 					continue
-				} 
+				}
 			}
 			err := handler.h.HandleEvent(ctx, event)
 			if err != nil {

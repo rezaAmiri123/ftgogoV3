@@ -11,7 +11,6 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/internal/monolith"
 	pg "github.com/rezaAmiri123/ftgogoV3/internal/postgres"
 	"github.com/rezaAmiri123/ftgogoV3/internal/registry"
-	"github.com/rezaAmiri123/ftgogoV3/internal/registry/serdes"
 	"github.com/rezaAmiri123/ftgogoV3/internal/tm"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/domain"
@@ -32,7 +31,7 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 
 	// setup Driven adapters
 	reg := registry.New()
-	if err = registerations(reg); err != nil {
+	if err = domain.Registerations(reg); err != nil {
 		return err
 	}
 	if err = orderpb.Registeration(reg); err != nil {
@@ -96,30 +95,5 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 			logger.Error().Err(err).Msg("order outbox processor encountered an error")
 		}
 	}()
-	return nil
-}
-
-func registerations(reg registry.Registry) (err error) {
-	serde := serdes.NewJsonSerde(reg)
-
-	// Order
-	err = serde.Register(domain.Order{}, func(v any) error {
-		order := v.(*domain.Order)
-		order.Aggregate = es.NewAggregate("", domain.OrderAggregate)
-		order.Status = domain.UnknownOrderStatus
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	// order events
-	if err = serde.Register(domain.OrderCreated{}); err != nil {
-		return err
-	}
-	if err = serde.Register(domain.OrderApproved{}); err != nil {
-		return err
-	}
-
 	return nil
 }

@@ -29,15 +29,16 @@ func RegisterIntegrationEventHandlers(subscriber am.RawMessageStream, handlers a
 		return handlers.HandleMessage(ctx, msg)
 	})
 
-	err = subscriber.Subscribe(kitchenpb.TicketAggregateChannel, evtMsgHandler, am.MessageFilter{
+	_, err = subscriber.Subscribe(kitchenpb.TicketAggregateChannel, evtMsgHandler, am.MessageFilter{
 		kitchenpb.TicketAcceptedEvent,
 	}, am.GroupName("delivery-tickets"))
 	if err != nil {
 		return err
 	}
-	return subscriber.Subscribe(orderpb.OrderAggregateChannel, evtMsgHandler, am.MessageFilter{
+	_, err = subscriber.Subscribe(orderpb.OrderAggregateChannel, evtMsgHandler, am.MessageFilter{
 		orderpb.OrderCreatedEvent,
 	}, am.GroupName("delivery-orders"))
+	return err
 }
 
 func (h integrationHandlers[T]) HandleEvent(ctx context.Context, event T) error {
@@ -61,16 +62,16 @@ func (h integrationHandlers[T]) onTicketAccepted(ctx context.Context, event T) e
 func (h integrationHandlers[T]) onOrderCreated(ctx context.Context, event T) error {
 	payload := event.Payload().(*orderpb.OrderCreated)
 	return h.app.CreateDelivery(ctx, commands.CreateDelivery{
-		ID:           payload.GetOrderID(),
-		RestaurantID: payload.GetRestaurantID(),
+		ID:              payload.GetOrderID(),
+		RestaurantID:    payload.GetRestaurantID(),
 		DeliveryAddress: h.toAddressDomain(payload.GetAddress()),
 	})
 }
 
 func (integrationHandlers[T]) toAddressDomain(address *orderpb.Address) domain.Address {
-    if address == nil{
-        return domain.Address{}
-    }
+	if address == nil {
+		return domain.Address{}
+	}
 	return domain.Address{
 		Street1: address.Street1,
 		Street2: address.Street2,

@@ -27,10 +27,11 @@ func RegisterCommandHandlers(subscriber am.RawMessageStream, handlers am.RawMess
 		return handlers.HandleMessage(ctx, msg)
 	})
 
-	return subscriber.Subscribe(kitchenpb.CommandChannel, cmdMsgHandler, am.MessageFilter{
+	_, err := subscriber.Subscribe(kitchenpb.CommandChannel, cmdMsgHandler, am.MessageFilter{
 		kitchenpb.CreateTicketCommands,
 		kitchenpb.ConfirmCreateTicketCommands,
 	}, am.GroupName("kitchen-commands"))
+	return err
 }
 
 func (h commandHandlers) HandleCommand(ctx context.Context, cmd ddd.Command) (ddd.Reply, error) {

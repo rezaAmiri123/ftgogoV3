@@ -24,9 +24,10 @@ func RegisterCommandHandlers(subscriber am.RawMessageStream, handlers am.RawMess
 		return handlers.HandleMessage(ctx, msg)
 	})
 
-	return subscriber.Subscribe(consumerpb.CommandChannel, cmdMsgHandler, am.MessageFilter{
+	_, err := subscriber.Subscribe(consumerpb.CommandChannel, cmdMsgHandler, am.MessageFilter{
 		consumerpb.AuthorizeConsumerCommand,
 	}, am.GroupName("consumer-commands"))
+	return err
 }
 
 func (h commandHandlers) HandleCommand(ctx context.Context, cmd ddd.Command) (ddd.Reply, error) {
@@ -41,9 +42,9 @@ func (h commandHandlers) HandleCommand(ctx context.Context, cmd ddd.Command) (dd
 func (h commandHandlers) onAuthorizeConsumer(ctx context.Context, cmd ddd.Command) (ddd.Reply, error) {
 	payload := cmd.Payload().(*consumerpb.AuthorizeCustomer)
 
-	return nil, h.app.ValidateOrderByConsumer(ctx,application.ValidateOrderByConsumer{
+	return nil, h.app.ValidateOrderByConsumer(ctx, application.ValidateOrderByConsumer{
 		ConsumerID: payload.GetId(),
-		OrderID: payload.GetOrderId(),
+		OrderID:    payload.GetOrderId(),
 		OrderTotal: int(payload.GetTotalOrder()),
 	})
 }

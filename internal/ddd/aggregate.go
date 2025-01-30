@@ -17,7 +17,7 @@ type (
 		ClearEvents()
 	}
 
-	Aggregate struct {
+	aggregate struct {
 		Entity
 		events []AggregateEvent
 	}
@@ -32,28 +32,33 @@ type (
 	aggregateEvent struct {
 		event
 	}
+
+	Aggregate interface{
+		IDer
+		AggregateNamer
+		Eventer
+		IDSetter
+		NameSetter
+	}
 )
 
-var _ interface {
-	AggregateNamer
-	Eventer
-} = (*Aggregate)(nil)
+var _ Aggregate =(*aggregate)(nil)
 
-func NewAggregate(id, name string) Aggregate {
-	return Aggregate{
+func NewAggregate(id, name string) *aggregate {
+	return &aggregate{
 		Entity: NewEntity(id, name),
 		events: make([]AggregateEvent, 0),
 	}
 }
 
-func (a Aggregate) AggregateName() string    { return a.name }
-func (a Aggregate) Events() []AggregateEvent { return a.events }
-func (a Aggregate) ClearEvents()             { a.events = []AggregateEvent{} }
+func (a aggregate) AggregateName() string    { return a.EntityName() }
+func (a aggregate) Events() []AggregateEvent { return a.events }
+func (a aggregate) ClearEvents()             { a.events = []AggregateEvent{} }
 
-func (a *Aggregate) AddEvent(name string, payload EventPayload, options ...EventOption) {
+func (a *aggregate) AddEvent(name string, payload EventPayload, options ...EventOption) {
 	options = append(options, Metadata{
-		AggregateNameKey: a.name,
-		AggregateIDKey:   a.id,
+		AggregateNameKey: a.EntityName(),
+		AggregateIDKey:   a.ID(),
 	})
 
 	a.events = append(a.events, aggregateEvent{
@@ -61,7 +66,7 @@ func (a *Aggregate) AddEvent(name string, payload EventPayload, options ...Event
 	})
 }
 
-func (a *Aggregate) setEvents(events []AggregateEvent) { a.events = events }
+func (a *aggregate) setEvents(events []AggregateEvent) { a.events = events }
 
 func (a aggregateEvent) AggregateName() string { return a.metadata.Get(AggregateNameKey).(string) }
 func (a aggregateEvent) AggregateID() string   { return a.metadata.Get(AggregateIDKey).(string) }

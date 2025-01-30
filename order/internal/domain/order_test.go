@@ -86,7 +86,6 @@ func TestOrder_ApplyEvent(t *testing.T) {
 	}
 }
 func TestOrder_CreateOrder(t *testing.T) {
-	aggregate := es.NewAggregate("id", "aggregate")
 	deliverAt := time.Now()
 
 	type args struct {
@@ -99,6 +98,7 @@ func TestOrder_CreateOrder(t *testing.T) {
 	tests := map[string]struct {
 		args        args
 		orderStatus OrderStatus
+		on          func(a *es.MockAggregate)
 		wantErr     error
 	}{
 		"OK": {
@@ -108,6 +108,15 @@ func TestOrder_CreateOrder(t *testing.T) {
 				lineItems:    []LineItem{LineItem{}},
 				deliverAt:    deliverAt,
 				deliverTo:    Address{Street1: "Street1"},
+			},
+			on: func(a *es.MockAggregate) {
+				a.On("AddEvent", OrderCreatedEvent, &OrderCreated{
+					ConsumerID:   "consumerID",
+					RestaurantID: "restaurantID",
+					LineItems:    []LineItem{LineItem{}},
+					DeliverAt:    deliverAt,
+					DeliverTo:    Address{Street1: "Street1"},
+				})
 			},
 			orderStatus: UnknownOrderStatus,
 			wantErr:     nil,
@@ -126,8 +135,13 @@ func TestOrder_CreateOrder(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
+			aggregate := es.NewMockAggregate(t)
 			o := &Order{Aggregate: aggregate}
 			o.Status = tt.orderStatus
+			if tt.on != nil {
+				tt.on(aggregate)
+			}
+
 			event, err := o.CreateOrder(
 				tt.args.consumerID,
 				tt.args.restaurantID,
@@ -141,8 +155,8 @@ func TestOrder_CreateOrder(t *testing.T) {
 			}
 			assert.Nil(t, tt.wantErr)
 			assert.NotNil(t, event)
-			assert.Len(t, o.Events(), 1)
-			assert.Equal(t, o.Events()[0].EventName(), OrderCreatedEvent)
+			// assert.Len(t, o.Events(), 1)
+			// assert.Equal(t, o.Events()[0].EventName(), OrderCreatedEvent)
 		})
 	}
 }

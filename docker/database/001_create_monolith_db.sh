@@ -6,7 +6,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
   CREATE USER ftgogo_user WITH ENCRYPTED PASSWORD 'ftgogo_pass';
 
-  GRANT CONNECT ON DATABASE ftgogo TO ftgogo_user;
+   GRANT CREATE, CONNECT ON DATABASE ftgogo TO ftgogo_user;
+  GRANT ALL ON SCHEMA public TO ftgogo_user;
 EOSQL
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "ftgogo" <<-EOSQL

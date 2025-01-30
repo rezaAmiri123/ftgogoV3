@@ -16,6 +16,7 @@ type Stream struct {
 	streamName string
 	js         nats.JetStreamContext
 	mu         sync.Mutex
+	subs       []*nats.Subscription
 	logger     zerolog.Logger
 }
 
@@ -78,7 +79,7 @@ func (s *Stream) Publish(ctx context.Context, topicName string, rawMsg am.RawMes
 	return
 }
 
-func (s *Stream) Subscribe(topicName string, handler am.RawMessageHandler, options ...am.SubscriberOption) error {
+func (s *Stream) Subscribe(topicName string, handler am.RawMessageHandler, options ...am.SubscriberOption) (am.Subscription, error) {
 	var err error
 
 	s.mu.Lock()
@@ -116,15 +117,31 @@ func (s *Stream) Subscribe(topicName string, handler am.RawMessageHandler, optio
 
 	_, err = s.js.AddConsumer(s.streamName, cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	var sub *nats.Subscription
 
 	if groupName := subCfg.GroupName(); groupName == "" {
-		_, err = s.js.Subscribe(topicName, s.handleMsg(subCfg, handler), opts...)
+		sub, err = s.js.Subscribe(topicName, s.handleMsg(subCfg, handler), opts...)
 	} else {
-		_, err = s.js.QueueSubscribe(topicName, groupName, s.handleMsg(subCfg, handler), opts...)
+		sub, err = s.js.QueueSubscribe(topicName, groupName, s.handleMsg(subCfg, handler), opts...)
 	}
 
+	s.subs = append(s.subs, sub)
+	return subscription{sub}, nil
+}
+
+func (s *Stream) Unsubscribe() error {
+	for _, sub := range s.subs{
+		if !sub.IsValid(){
+			continue
+		}
+		err := sub.Drain()
+		if err!= nil{
+			return err
+		}
+	}
 	return nil
 }
 
@@ -156,7 +173,7 @@ func (s *Stream) handleMsg(cfg am.SubscriberConfig, handler am.RawMessageHandler
 				return
 			}
 		}
-		
+
 		msg := &rawMessage{
 			id:       m.GetId(),
 			name:     m.GetName(),

@@ -25,9 +25,10 @@ func RegisterCommandHandlers(subscriber am.RawMessageStream, handlers am.RawMess
 		return handlers.HandleMessage(ctx, msg)
 	})
 
-	return subscriber.Subscribe(orderpb.CommandChannel, cmdMsgHandler, am.MessageFilter{
+	_, err := subscriber.Subscribe(orderpb.CommandChannel, cmdMsgHandler, am.MessageFilter{
 		orderpb.ApproveOrderCommand,
 	}, am.GroupName("order-commands"))
+	return err
 }
 
 func (h commandHandlers) HandleCommand(ctx context.Context, cmd ddd.Command) (ddd.Reply, error) {

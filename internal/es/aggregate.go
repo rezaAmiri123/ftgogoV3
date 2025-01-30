@@ -8,36 +8,39 @@ type (
 		PendingVersion() int
 	}
 
-	Aggregate struct {
+	aggregate struct {
 		ddd.Aggregate
 		version int
 	}
+
+	Aggregate interface{
+		ddd.Aggregate
+		EventCommiter
+		Versioner
+		VersionSetter
+	}
 )
 
-var _ interface {
-	EventCommiter
-	Versioner
-	VersionSetter
-} = (*Aggregate)(nil)
+var _ Aggregate = (*aggregate)(nil)
 
-func NewAggregate(id, name string) Aggregate {
-	return Aggregate{
+func NewAggregate(id, name string) *aggregate {
+	return &aggregate{
 		Aggregate: ddd.NewAggregate(id, name),
 		version:   0,
 	}
 }
 
-func (a *Aggregate) AddEvent(name string, payload ddd.EventPayload, options ...ddd.EventOption) {
+func (a *aggregate) AddEvent(name string, payload ddd.EventPayload, options ...ddd.EventOption) {
 	options = append(options, ddd.Metadata{
 		ddd.AggregateVersionKey: a.PendingVersion() + 1,
 	})
 	a.Aggregate.AddEvent(name, payload, options...)
 }
 
-func (a *Aggregate) CommitEvents() {
+func (a *aggregate) CommitEvents() {
 	a.version += len(a.Events())
 	a.ClearEvents()
 }
-func (a *Aggregate) Version() int           { return a.version }
-func (a *Aggregate) PendingVersion() int    { return a.version + len(a.Events()) }
-func (a *Aggregate) setVersion(version int) { a.version = version }
+func (a *aggregate) Version() int           { return a.version }
+func (a *aggregate) PendingVersion() int    { return a.version + len(a.Events()) }
+func (a *aggregate) SetVersion(version int) { a.version = version }
