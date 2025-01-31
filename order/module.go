@@ -8,9 +8,9 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/internal/es"
 	"github.com/rezaAmiri123/ftgogoV3/internal/jetstream"
-	"github.com/rezaAmiri123/ftgogoV3/internal/monolith"
 	pg "github.com/rezaAmiri123/ftgogoV3/internal/postgres"
 	"github.com/rezaAmiri123/ftgogoV3/internal/registry"
+	"github.com/rezaAmiri123/ftgogoV3/internal/system"
 	"github.com/rezaAmiri123/ftgogoV3/internal/tm"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/order/internal/domain"
@@ -22,7 +22,11 @@ import (
 
 type Module struct{}
 
-func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error) {
+func (m *Module) Startup(ctx context.Context, mono system.Service) (err error) {
+	return Root(ctx, mono)
+}
+
+func Root(ctx context.Context, svc system.Service) (err error) {
 	defer func() {
 		if err != nil {
 			err = errors.Wrap(err, "order module")
@@ -38,9 +42,9 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 		return err
 	}
 
-	jsStream := jetstream.NewStream(mono.Config().Nats.Stream, mono.JS(), mono.Logger())
-	outboxStore := pg.NewOutboxStore("orders.outbox", mono.DB())
-	inboxStore := pg.NewInboxStore("orders.inbox", mono.DB())
+	jsStream := jetstream.NewStream(svc.Config().Nats.Stream, svc.JS(), svc.Logger())
+	outboxStore := pg.NewOutboxStore("orders.outbox", svc.DB())
+	inboxStore := pg.NewInboxStore("orders.inbox", svc.DB())
 	inboxHandlerMiddleware := tm.NewInboxHandlerMiddleware(inboxStore)
 	stream := am.RawMessageStreamWithMiddleware(
 		jsStream,
@@ -50,11 +54,11 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 	replyStream := am.NewReplyStream(reg, stream)
 	domainDispatcher := ddd.NewEventDispatcher[ddd.Event]()
 	aggregateStore := es.AggregateStoreWithMiddleware(
-		pg.NewEventStore("orders.events", mono.DB(), reg),
-		pg.NewSnapshotStore("orders.snapshots", mono.DB(), reg),
+		pg.NewEventStore("orders.events", svc.DB(), reg),
+		pg.NewSnapshotStore("orders.snapshots", svc.DB(), reg),
 	)
 	orders := es.NewAggregateRepository[*domain.Order](domain.OrderAggregate, reg, aggregateStore)
-	conn, err := grpc.Dial(ctx, mono.Config().Rpc.Address())
+	conn, err := grpc.Dial(ctx, svc.Config().Rpc.Address())
 	if err != nil {
 		return err
 	}
@@ -67,20 +71,20 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 	// setup application
 	var app application.App
 	app = application.New(orders, restaurants, domainDispatcher)
-	app = logging.LogApplicationAccess(app, mono.Logger())
+	app = logging.LogApplicationAccess(app, svc.Logger())
 
 	domainEventHandlers := logging.LogEventHandlerAccess[ddd.Event](
 		handlers.NewDomainEventHandlers(eventStream),
-		"DomainEvents", mono.Logger(),
+		"DomainEvents", svc.Logger(),
 	)
 	commandHandlers := logging.LogCommandHandlerAccess[ddd.Command](
 		handlers.NewCommandHandlers(app),
-		"Commands", mono.Logger(),
+		"Commands", svc.Logger(),
 	)
 	cmdMsgHandlers := am.NewCommandMessageHandler(reg, replyStream, commandHandlers)
 	msgHandlerMiddleware := am.RawMessageHandlerWithMiddleware(cmdMsgHandlers, inboxHandlerMiddleware)
 	// setup Driver adapters
-	if err := grpc.RegisterServer(app, mono.RPC()); err != nil {
+	if err := grpc.RegisterServer(app, svc.RPC()); err != nil {
 		return err
 	}
 	handlers.RegisterDomainEventHandlers(domainDispatcher, domainEventHandlers)
@@ -88,10 +92,10 @@ func (m Module) Startup(ctx context.Context, mono monolith.Monolith) (err error)
 		return err
 	}
 
-	outboxProcessor := tm.NewOutboxProcessor(jsStream, pg.NewOutboxStore("orders.outbox", mono.DB()))
+	outboxProcessor := tm.NewOutboxProcessor(jsStream, pg.NewOutboxStore("orders.outbox", svc.DB()))
 	go func() {
 		if err := outboxProcessor.Start(ctx); err != nil {
-			logger := mono.Logger()
+			logger := svc.Logger()
 			logger.Error().Err(err).Msg("order outbox processor encountered an error")
 		}
 	}()
