@@ -2,6 +2,7 @@ module github.com/rezaAmiri123/ftgogoV3
 
 go 1.22
 
+replace cloud.google.com/go/compute/metadata => cloud.google.com/go/compute/metadata v0.2.3
 require (
 	github.com/cucumber/godog v0.12.5
 	github.com/docker/go-connections v0.5.0
