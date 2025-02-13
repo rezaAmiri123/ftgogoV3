@@ -7,8 +7,8 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/internal/am"
 )
 
-func RegisterReplyHandlers(subscriber am.RawMessageStream, replyHandlers am.RawMessageHandler) (err error) {
-	replyMsgHandler := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.IncomingRawMessage) error {
+func RegisterReplyHandlers(subscriber am.MessageSubscriber, replyHandlers am.MessageHandler) (err error) {
+	replyMsgHandler := am.MessageHandlerFunc(func(ctx context.Context, msg am.IncomingMessage) error {
 		return replyHandlers.HandleMessage(ctx, msg)
 	})
 

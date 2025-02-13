@@ -3,39 +3,40 @@ package am
 import (
 	"context"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/stackus/errors"
 )
 
-type fakeMessage[O any] struct {
+type fakeEventMessage struct {
 	subject string
-	payload O
+	payload ddd.Event
 }
 
-type FakeMessagePublisher[O any] struct {
-	messages []fakeMessage[O]
+type FakeEventPublisher struct {
+	messages []fakeEventMessage
 }
 
-var _ MessagePublisher[any] = (*FakeMessagePublisher[any])(nil)
+var _ EventPublisher = (*FakeEventPublisher)(nil)
 
-func NewFakeMessagePublisher[O any]() *FakeMessagePublisher[O] {
-	return &FakeMessagePublisher[O]{
-		messages: []fakeMessage[O]{},
+func NewFakeEventPublisher() *FakeEventPublisher {
+	return &FakeEventPublisher{
+		messages: []fakeEventMessage{},
 	}
 }
 
-func (p *FakeMessagePublisher[O]) Publish(ctx context.Context, topicName string, v O) error {
-	p.messages = append(p.messages, fakeMessage[O]{topicName, v})
+func (p *FakeEventPublisher) Publish(ctx context.Context, topicName string, evt ddd.Event) error {
+	p.messages = append(p.messages, fakeEventMessage{topicName, evt})
 	return nil
 }
 
-func (p *FakeMessagePublisher[O]) Reset() {
-	p.messages = []fakeMessage[O]{}
+func (p *FakeEventPublisher) Reset() {
+	p.messages = []fakeEventMessage{}
 }
 
-func (p *FakeMessagePublisher[O]) Last() (string, O, error) {
-	var v O
+func (p *FakeEventPublisher) Last() (string, ddd.Event, error) {
+	var v ddd.Event
 	if len(p.messages) == 0 {
-		return "", v, errors.ErrNotFound.Msg("no message have been published")
+		return "", v, errors.ErrNotFound.Msg("no events have been published")
 	}
 
 	last := p.messages[len(p.messages)-1]

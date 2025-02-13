@@ -4,13 +4,14 @@ import (
 	"context"
 
 	"github.com/stackus/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func clientErrorUnrayInterceptor()grpc.UnaryClientInterceptor{
+func clientErrorUnrayInterceptor() grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		return errors.ReceiveGRPCError(invoker(ctx,method, req,reply,cc,opts...))
+		return errors.ReceiveGRPCError(invoker(ctx, method, req, reply, cc, opts...))
 	}
 }
 
@@ -18,7 +19,10 @@ func Dial(ctx context.Context, endpoint string) (conn *grpc.ClientConn, err erro
 	conn, err = grpc.NewClient(
 		endpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithChainUnaryInterceptor(clientErrorUnrayInterceptor()),		
+		grpc.WithChainUnaryInterceptor(
+			clientErrorUnrayInterceptor(),
+			otelgrpc.UnaryClientInterceptor(),
+		),
 	)
 	if err != nil {
 		return

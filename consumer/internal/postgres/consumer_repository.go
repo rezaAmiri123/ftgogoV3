@@ -2,22 +2,22 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 
 	"github.com/rezaAmiri123/ftgogoV3/consumer/internal/domain"
+	"github.com/rezaAmiri123/ftgogoV3/internal/postgres"
 	"github.com/stackus/errors"
 )
 
 type ConsumerReopsitory struct {
 	tableName string
-	db        *sql.DB
+	db        postgres.DB
 }
 
 var _ domain.ConsumerRepository = (*ConsumerReopsitory)(nil)
 
-func NewConsumerReopsitory(tableName string, db *sql.DB) ConsumerReopsitory {
+func NewConsumerReopsitory(tableName string, db postgres.DB) ConsumerReopsitory {
 	return ConsumerReopsitory{
 		tableName: tableName,
 		db:        db,

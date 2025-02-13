@@ -2,14 +2,19 @@ package handlers
 
 import (
 	"context"
+	"time"
 
 	"github.com/rezaAmiri123/ftgogoV3/delivery/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/delivery/internal/application/commands"
 	"github.com/rezaAmiri123/ftgogoV3/delivery/internal/domain"
 	"github.com/rezaAmiri123/ftgogoV3/internal/am"
 	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
+	"github.com/rezaAmiri123/ftgogoV3/internal/errorsotel"
+	"github.com/rezaAmiri123/ftgogoV3/internal/registry"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/kitchenpb"
 	"github.com/rezaAmiri123/ftgogoV3/order/orderpb"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type integrationHandlers[T ddd.Event] struct {
@@ -18,14 +23,14 @@ type integrationHandlers[T ddd.Event] struct {
 
 var _ ddd.EventHandler[ddd.Event] = (*integrationHandlers[ddd.Event])(nil)
 
-func NewIntegrationHandlers(app application.App) ddd.EventHandler[ddd.Event] {
-	return integrationHandlers[ddd.Event]{
+func NewIntegrationHandlers(reg registry.Registry, app application.App, mws ...am.MessageHandlerMiddleware) am.MessageHandler {
+	return am.NewEventHandler(reg, integrationHandlers[ddd.Event]{
 		app: app,
-	}
+	}, mws...)
 }
 
-func RegisterIntegrationEventHandlers(subscriber am.RawMessageStream, handlers am.RawMessageHandler) (err error) {
-	evtMsgHandler := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.IncomingRawMessage) error {
+func RegisterIntegrationEventHandlers(subscriber am.MessageSubscriber, handlers am.MessageHandler) (err error) {
+	evtMsgHandler := am.MessageHandlerFunc(func(ctx context.Context, msg am.IncomingMessage) error {
 		return handlers.HandleMessage(ctx, msg)
 	})
 
@@ -41,7 +46,24 @@ func RegisterIntegrationEventHandlers(subscriber am.RawMessageStream, handlers a
 	return err
 }
 
-func (h integrationHandlers[T]) HandleEvent(ctx context.Context, event T) error {
+func (h integrationHandlers[T]) HandleEvent(ctx context.Context, event T) (err error) {
+	span := trace.SpanFromContext(ctx)
+	defer func(started time.Time) {
+		if err != nil {
+			span.AddEvent(
+				"Encountered an error handling integration event",
+				trace.WithAttributes(errorsotel.ErrAttrs(err)...),
+			)
+		}
+		span.AddEvent("Handled integration event", trace.WithAttributes(
+			attribute.Int64("TookMS", time.Since(started).Milliseconds()),
+		))
+	}(time.Now())
+
+	span.AddEvent("Handling integration event", trace.WithAttributes(
+		attribute.String("Event", event.EventName()),
+	))
+
 	switch event.EventName() {
 	case kitchenpb.TicketAcceptedEvent:
 		return h.onTicketAccepted(ctx, event)

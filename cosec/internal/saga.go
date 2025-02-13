@@ -6,7 +6,6 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/accounting/accountingpb"
 	"github.com/rezaAmiri123/ftgogoV3/consumer/consumerpb"
 	"github.com/rezaAmiri123/ftgogoV3/cosec/internal/models"
-	"github.com/rezaAmiri123/ftgogoV3/internal/am"
 	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/internal/sec"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/kitchenpb"
@@ -54,23 +53,24 @@ func NewCreateOrderSaga() sec.Saga[*models.CreateOrderData] {
 	return saga
 }
 
-func (s createOrderSaga) rejectOrder(ctx context.Context, data *models.CreateOrderData) am.Command {
-	return am.NewCommand(orderpb.RejectOrderCommand, orderpb.CommandChannel,
-		&orderpb.RejectOrder{
-			OrderID: data.OrderID,
-		})
+func (s createOrderSaga) rejectOrder(ctx context.Context, data *models.CreateOrderData) (string, ddd.Command, error) {
+	cmd := ddd.NewCommand(orderpb.RejectOrderCommand, &orderpb.RejectOrder{
+		OrderID: data.OrderID,
+	})
+	return orderpb.CommandChannel, cmd, nil
 }
 
-func (s createOrderSaga) authorizeConsumer(ctx context.Context, data *models.CreateOrderData) am.Command {
-	return am.NewCommand(consumerpb.AuthorizeConsumerCommand, consumerpb.CommandChannel,
-		&consumerpb.AuthorizeCustomer{
-			Id:         data.ConsumerID,
-			OrderId:    data.OrderID,
-			TotalOrder: int64(data.OrderTotal),
-		})
+func (s createOrderSaga) authorizeConsumer(ctx context.Context, data *models.CreateOrderData) (string, ddd.Command, error) {
+	cmd := ddd.NewCommand(consumerpb.AuthorizeConsumerCommand, &consumerpb.AuthorizeCustomer{
+		Id:         data.ConsumerID,
+		OrderId:    data.OrderID,
+		TotalOrder: int64(data.OrderTotal),
+	})
+
+	return consumerpb.CommandChannel, cmd, nil
 }
 
-func (s createOrderSaga) createTicket(ctx context.Context, data *models.CreateOrderData) am.Command {
+func (s createOrderSaga) createTicket(ctx context.Context, data *models.CreateOrderData) (string, ddd.Command, error) {
 	items := make([]*kitchenpb.CreateTicket_LineItem, len(data.LineItems))
 	for i, item := range data.LineItems {
 		items[i] = &kitchenpb.CreateTicket_LineItem{
@@ -80,11 +80,13 @@ func (s createOrderSaga) createTicket(ctx context.Context, data *models.CreateOr
 		}
 	}
 
-	return am.NewCommand(kitchenpb.CreateTicketCommands, kitchenpb.CommandChannel, &kitchenpb.CreateTicket{
+	cmd := ddd.NewCommand(kitchenpb.CreateTicketCommands, &kitchenpb.CreateTicket{
 		OrderID:      data.OrderID,
 		RestaurantID: data.RestaurantID,
 		Items:        items,
 	})
+
+	return kitchenpb.CommandChannel, cmd, nil
 }
 
 func (s createOrderSaga) onCreatedTicketReply(ctx context.Context, data *models.CreateOrderData, reply ddd.Reply) error {
@@ -95,33 +97,37 @@ func (s createOrderSaga) onCreatedTicketReply(ctx context.Context, data *models.
 	return nil
 }
 
-func (s createOrderSaga) cancelCreateTicket(ctx context.Context, data *models.CreateOrderData) am.Command {
-	return am.NewCommand(kitchenpb.CancelCreateTicketCommands, kitchenpb.CommandChannel,
-		&kitchenpb.CancelCreateTicket{
-			TicketID: data.TicketID,
-		})
+func (s createOrderSaga) cancelCreateTicket(ctx context.Context, data *models.CreateOrderData) (string, ddd.Command, error) {
+	cmd := ddd.NewCommand(kitchenpb.CancelCreateTicketCommands, &kitchenpb.CancelCreateTicket{
+		TicketID: data.TicketID,
+	})
+
+	return kitchenpb.CommandChannel, cmd, nil
 }
 
-func (s createOrderSaga) authorizeAccount(ctx context.Context, data *models.CreateOrderData) am.Command {
-	return am.NewCommand(accountingpb.AuthorizeAccountCommand, accountingpb.CommandChannel,
-		&accountingpb.AuthorizeAccount{
-			AccountId:  data.ConsumerID,
-			OrderId:    data.OrderID,
-			TotalOrder: int64(data.OrderTotal),
-		})
+func (s createOrderSaga) authorizeAccount(ctx context.Context, data *models.CreateOrderData) (string, ddd.Command, error) {
+	cmd := ddd.NewCommand(accountingpb.AuthorizeAccountCommand, &accountingpb.AuthorizeAccount{
+		AccountId:  data.ConsumerID,
+		OrderId:    data.OrderID,
+		TotalOrder: int64(data.OrderTotal),
+	})
+
+	return accountingpb.CommandChannel, cmd, nil
 }
 
-func (s createOrderSaga) confirmCreateTicket(ctx context.Context, data *models.CreateOrderData) am.Command {
-	return am.NewCommand(kitchenpb.ConfirmCreateTicketCommands, kitchenpb.CommandChannel,
-		&kitchenpb.ConfirmCreateTicket{
-			TicketID: data.TicketID,
-		})
+func (s createOrderSaga) confirmCreateTicket(ctx context.Context, data *models.CreateOrderData) (string, ddd.Command, error) {
+	cmd := ddd.NewCommand(kitchenpb.ConfirmCreateTicketCommands, &kitchenpb.ConfirmCreateTicket{
+		TicketID: data.TicketID,
+	})
+
+	return kitchenpb.CommandChannel, cmd, nil
 }
 
-func (s createOrderSaga) approveOrder(ctx context.Context, data *models.CreateOrderData) am.Command {
-	return am.NewCommand(orderpb.ApproveOrderCommand, orderpb.CommandChannel,
-		&orderpb.ApproveOrder{
-			OrderID:  data.OrderID,
-			TicketID: data.TicketID,
-		})
+func (s createOrderSaga) approveOrder(ctx context.Context, data *models.CreateOrderData) (string, ddd.Command, error) {
+	cmd := ddd.NewCommand(orderpb.ApproveOrderCommand, &orderpb.ApproveOrder{
+		OrderID:  data.OrderID,
+		TicketID: data.TicketID,
+	})
+
+	return orderpb.CommandChannel, cmd, nil
 }

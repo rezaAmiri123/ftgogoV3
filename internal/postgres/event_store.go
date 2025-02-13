@@ -89,32 +89,32 @@ func (s EventStore) Save(ctx context.Context, aggregate es.EventSourcedAggregate
 				(stream_id, stream_name, stream_version, event_id, event_name, event_data, occurred_at) 
 				VALUES`
 
-	var tx *sql.Tx
-	switch db := s.db.(type) {
-	case *sql.Tx:
-		tx = db
-	case *sql.DB:
-		tx, err = db.BeginTx(ctx, &sql.TxOptions{})
-		if err != nil {
-			return err
-		}
-		defer func() {
-			p := recover()
-			switch {
-			case p != nil:
-				_ = tx.Rollback()
-				panic(p)
-			case err != nil:
-				rErr := tx.Rollback()
-				if rErr != nil {
-					err = errors.Wrap(err, rErr.Error())
-				}
-			default:
-				err = tx.Commit()
-			}
-		}()
+	// var tx *sql.Tx
+	// switch db := s.db.(type) {
+	// case *sql.Tx:
+	// 	tx = db
+	// case *sql.DB:
+	// 	tx, err = db.BeginTx(ctx, &sql.TxOptions{})
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	defer func() {
+	// 		p := recover()
+	// 		switch {
+	// 		case p != nil:
+	// 			_ = tx.Rollback()
+	// 			panic(p)
+	// 		case err != nil:
+	// 			rErr := tx.Rollback()
+	// 			if rErr != nil {
+	// 				err = errors.Wrap(err, rErr.Error())
+	// 			}
+	// 		default:
+	// 			err = tx.Commit()
+	// 		}
+	// 	}()
 
-	}
+	// }
 
 	aggregateID := aggregate.ID()
 	aggregateName := aggregate.AggregateName()
@@ -140,7 +140,7 @@ func (s EventStore) Save(ctx context.Context, aggregate es.EventSourcedAggregate
 		values[i*7+5] = payloadData
 		values[i*7+6] = event.OccurredAt()
 	}
-	if _, err = tx.ExecContext(
+	if _, err = s.db.ExecContext(
 		ctx,
 		fmt.Sprintf("%s %s", s.table(query), strings.Join(placeholders, ",")),
 		values...,

@@ -2,22 +2,22 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 
 	"github.com/rezaAmiri123/ftgogoV3/delivery/internal/domain"
+	"github.com/rezaAmiri123/ftgogoV3/internal/postgres"
 	"github.com/stackus/errors"
 )
 
 type DeliveryRepository struct {
 	tableName string
-	db        *sql.DB
+	db        postgres.DB
 }
 
 var _ domain.DeliveryRepository = (*DeliveryRepository)(nil)
 
-func NewDeliveryRepository(tableName string, db *sql.DB) DeliveryRepository {
+func NewDeliveryRepository(tableName string, db postgres.DB) DeliveryRepository {
 	return DeliveryRepository{
 		tableName: tableName,
 		db:        db,

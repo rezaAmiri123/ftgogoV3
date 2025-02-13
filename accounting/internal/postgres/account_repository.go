@@ -2,20 +2,20 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/rezaAmiri123/ftgogoV3/accounting/internal/domain"
+	"github.com/rezaAmiri123/ftgogoV3/internal/postgres"
 )
 
 type AccountReopsitory struct {
 	tableName string
-	db        *sql.DB
+	db        postgres.DB
 }
 
 var _ domain.AccountRepository = (*AccountReopsitory)(nil)
 
-func NewAccountReopsitory(tableName string, db *sql.DB) AccountReopsitory {
+func NewAccountReopsitory(tableName string, db postgres.DB) AccountReopsitory {
 	return AccountReopsitory{
 		tableName: tableName,
 		db:        db,

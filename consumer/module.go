@@ -11,9 +11,12 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/consumer/internal/logging"
 	"github.com/rezaAmiri123/ftgogoV3/consumer/internal/postgres"
 	"github.com/rezaAmiri123/ftgogoV3/internal/am"
+	"github.com/rezaAmiri123/ftgogoV3/internal/amotel"
+	"github.com/rezaAmiri123/ftgogoV3/internal/amprom"
 	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/internal/jetstream"
 	pg "github.com/rezaAmiri123/ftgogoV3/internal/postgres"
+	"github.com/rezaAmiri123/ftgogoV3/internal/postgresotel"
 	"github.com/rezaAmiri123/ftgogoV3/internal/registry"
 	"github.com/rezaAmiri123/ftgogoV3/internal/registry/serdes"
 	"github.com/rezaAmiri123/ftgogoV3/internal/system"
@@ -27,6 +30,7 @@ func (m *Module) Startup(ctx context.Context, mono system.Service) (err error) {
 }
 
 func Root(ctx context.Context, svc system.Service) (err error) {
+	serviceName := "consumer"
 	// setip Driven adapters
 	reg := registry.New()
 	if err = registration(reg); err != nil {
@@ -35,19 +39,28 @@ func Root(ctx context.Context, svc system.Service) (err error) {
 	if err = consumerpb.Registration(reg); err != nil {
 		return err
 	}
+	var stream am.MessageStream
+	stream = jetstream.NewStream(svc.Config().Nats.Stream, svc.JS(), svc.Logger())
+	outboxStore := pg.NewOutboxStore("consumer.outbox", postgresotel.Trace(svc.DB()))
+	inboxStore := pg.NewInboxStore("consumer.inbox", postgresotel.Trace(svc.DB()))
 
-	jsStream := jetstream.NewStream(svc.Config().Nats.Stream, svc.JS(), svc.Logger())
-	outboxStore := pg.NewOutboxStore("consumer.outbox", svc.DB())
-	inboxStore := pg.NewInboxStore("consumer.inbox", svc.DB())
-	inboxHandlerMiddleware := tm.NewInboxHandlerMiddleware(inboxStore)
-	stream := am.RawMessageStreamWithMiddleware(
-		jsStream,
-		tm.NewOutboxStreamMiddleware(outboxStore),
+	sentCounter := amprom.SentMessageCounter(serviceName)
+	messagePublisher := am.NewMessagePublisher(
+		stream,
+		amotel.OtelMessageContextInjector(),
+		sentCounter,
+		tm.OutboxPublisher(outboxStore),
 	)
-	eventStream := am.NewEventStream(reg, stream)
-	replyStream := am.NewReplyStream(reg, stream)
+	messageSubscriber := am.NewMessageSubscriber(
+		stream,
+		amotel.OtelMessageContextExtractor(),
+		amprom.ReceivedMessagesCounter(serviceName),
+	)
+	eventPublisher := am.NewEventPublisher(reg, messagePublisher)
+	replyPublisher := am.NewReplyPublisher(reg, messagePublisher)
+
 	domainDispatcher := ddd.NewEventDispatcher[ddd.AggregateEvent]()
-	consumers := postgres.NewConsumerReopsitory("consumer.consumers", svc.DB())
+	consumers := postgres.NewConsumerReopsitory("consumer.consumers", postgresotel.Trace(svc.DB()))
 
 	var app application.App
 	app = application.New(consumers, domainDispatcher)
@@ -55,15 +68,13 @@ func Root(ctx context.Context, svc system.Service) (err error) {
 
 	// setup application handlers
 	domainEventHandlers := logging.LogEventHandlersAccess[ddd.AggregateEvent](
-		handlers.NewDomainEventHandlers(eventStream),
+		handlers.NewDomainEventHandlers(eventPublisher),
 		"DomainEvents", svc.Logger(),
 	)
-	commandHandlers := logging.LogCommandHandlerAccess[ddd.Command](
-		handlers.NewCommandHandlers(app),
-		"Commands", svc.Logger(),
+	commandHandlers := am.LogMessageHandlerAccess(
+		handlers.NewCommandHandlers(reg, app, replyPublisher, tm.InboxHandler(inboxStore)),
+		serviceName, "Commands", svc.Logger(),
 	)
-	cmdMsgHandlers := am.NewCommandMessageHandler(reg, replyStream, commandHandlers)
-	msgHandlerMiddleware := am.RawMessageHandlerWithMiddleware(cmdMsgHandlers, inboxHandlerMiddleware)
 
 	// setup Driver adapters
 	if err := grpc.RegisterServer(app, svc.RPC()); err != nil {
@@ -71,14 +82,14 @@ func Root(ctx context.Context, svc system.Service) (err error) {
 	}
 	// handlers.RegisterAccountHandlers(accountHandlers, domainDispatcher)
 	handlers.RegisterDomainEventHandlers(domainDispatcher, domainEventHandlers)
-	if err = handlers.RegisterCommandHandlers(stream, msgHandlerMiddleware); err != nil {
+	if err = handlers.RegisterCommandHandlers(messageSubscriber, commandHandlers); err != nil {
 		return err
 	}
 	if err = consumerpb.RegisterAsyncAPI(svc.Mux()); err != nil {
 		return err
 	}
 
-	outboxProcessor := tm.NewOutboxProcessor(jsStream, pg.NewOutboxStore("consumer.outbox", svc.DB()))
+	outboxProcessor := tm.NewOutboxProcessor(stream, pg.NewOutboxStore("consumer.outbox", svc.DB()))
 	go func() {
 		if err := outboxProcessor.Start(ctx); err != nil {
 			logger := svc.Logger()

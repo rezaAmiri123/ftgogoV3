@@ -13,10 +13,8 @@ install-tools:
 
 docker-clean-monolith:
 	docker image rm ftgogov3-monolith -f
-
-docker-build-monolith:
-	docker build -t ftgogov3-monolith --file docker/Dockerfile .
-
+docker-log-monolith:
+	docker logs monolith -f
 docker-run-monolith:
 	docker compose --profile monolith up
 docker-rm-volume-pgdata:
@@ -32,9 +30,13 @@ psql:
 	PGPASSWORD=ftgogo_pass psql -h postgres -U ftgogo_user -d ftgogo
 
 pprof-heap:
-	go tool pprof -http localhost:9090 http://localhost:6060/debug/pprof/heap?debug=1
+	go tool pprof -http localhost:9091 http://localhost:6060/debug/pprof/heap?debug=1
 
 pprof-goroutine:
-	go tool pprof -http localhost:9090 http://localhost:6060/debug/pprof/goroutine?debug=1
+	go tool pprof -http localhost:9091 http://localhost:6060/debug/pprof/goroutine?debug=1
 test:
 	go test ./... -count 1
+
+# jaeger: http://127.0.0.1:8081
+# prometheus: http://127.0.0.1:9090/
+# grafana: http://127.0.0.1:3000/
