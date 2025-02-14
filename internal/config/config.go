@@ -27,6 +27,7 @@ type (
 	}
 
 	AppConfig struct {
+		Name            string `envconfig:"NAME" default:"Ftgogo"`
 		Secret          string `envconfig:"SECRET" required:"true"`
 		Environment     string
 		LogLevel        string `envconfig:"LOG_LEVEL" default:"DEBUG"`

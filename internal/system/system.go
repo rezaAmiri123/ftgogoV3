@@ -13,7 +13,13 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/timeout"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/ratelimit"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	// grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+
 	"github.com/nats-io/nats.go"
 	"github.com/pressly/goose/v3"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -23,6 +29,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stackus/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
@@ -164,6 +171,10 @@ func (s *System) initMux() {
 		MaxAge:           300,
 	}).Handler)
 
+	// Otel
+	otelhttp.LabelerFromContext(context.Background())
+	s.mux.Use(otelhttp.NewMiddleware(s.cfg.Name))
+
 	// metrics
 	s.mux.Method("Get", "/metrics", promhttp.Handler())
 }
@@ -174,6 +185,7 @@ func (s *System) initRpc() {
 			recovery.UnaryServerInterceptor(),
 			otelgrpc.UnaryServerInterceptor(),
 			serverErrorUnaryInterceptor(),
+			
 		),
 	)
 	reflection.Register(s.rpc)
