@@ -21,7 +21,13 @@ type (
 		Stream string `default:"ftgogo"`
 	}
 
+	OtelConfig struct {
+		ServiceName      string `envconfig:"SERVICE_NAME" default:"ftgogo"`
+		ExporterEndpoint string `envconfig:"EXPORTER_OTLP_ENDPOINT" default:"http://collector:4317"`
+	}
+
 	AppConfig struct {
+		Name            string `envconfig:"NAME" default:"Ftgogo"`
 		Secret          string `envconfig:"SECRET" required:"true"`
 		Environment     string
 		LogLevel        string `envconfig:"LOG_LEVEL" default:"DEBUG"`
@@ -29,6 +35,7 @@ type (
 		Nats            NatsConfig
 		Rpc             rpc.RpcConfig
 		Web             web.WebConfig
+		Otel            OtelConfig
 		ShutdownTimeout time.Duration `envconfig:"SHUTDOWN_TIMEOUT" default:"30s"`
 	}
 )

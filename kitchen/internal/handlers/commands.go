@@ -2,28 +2,33 @@ package handlers
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rezaAmiri123/ftgogoV3/internal/am"
 	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
+	"github.com/rezaAmiri123/ftgogoV3/internal/errorsotel"
+	"github.com/rezaAmiri123/ftgogoV3/internal/registry"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/application"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/application/commands"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/domain"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/kitchenpb"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type commandHandlers struct {
 	app application.App
 }
 
-func NewCommandHandlers(app application.App) ddd.CommandHandler[ddd.Command] {
-	return commandHandlers{
+func NewCommandHandlers(reg registry.Registry, app application.App, replyPubliher am.ReplyPublisher, mws ...am.MessageHandlerMiddleware) am.MessageHandler {
+	return am.NewCommandHandler(reg, replyPubliher, commandHandlers{
 		app: app,
-	}
+	}, mws...)
 }
 
-func RegisterCommandHandlers(subscriber am.RawMessageStream, handlers am.RawMessageHandler) error {
-	cmdMsgHandler := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.IncomingRawMessage) (err error) {
+func RegisterCommandHandlers(subscriber am.MessageSubscriber, handlers am.MessageHandler) error {
+	cmdMsgHandler := am.MessageHandlerFunc(func(ctx context.Context, msg am.IncomingMessage) (err error) {
 		return handlers.HandleMessage(ctx, msg)
 	})
 
@@ -34,7 +39,24 @@ func RegisterCommandHandlers(subscriber am.RawMessageStream, handlers am.RawMess
 	return err
 }
 
-func (h commandHandlers) HandleCommand(ctx context.Context, cmd ddd.Command) (ddd.Reply, error) {
+func (h commandHandlers) HandleCommand(ctx context.Context, cmd ddd.Command) (reply ddd.Reply, err error) {
+	span := trace.SpanFromContext(ctx)
+	defer func(started time.Time) {
+		if err != nil {
+			span.AddEvent(
+				"Encountered an error handling command",
+				trace.WithAttributes(errorsotel.ErrAttrs(err)...),
+			)
+		}
+		span.AddEvent("Handled command", trace.WithAttributes(
+			attribute.Int64("TookMS", time.Since(started).Milliseconds()),
+		))
+	}(time.Now())
+
+	span.AddEvent("Handling command", trace.WithAttributes(
+		attribute.String("Command", cmd.CommandName()),
+	))
+
 	switch cmd.CommandName() {
 	case kitchenpb.CreateTicketCommands:
 		return h.doCreateTicket(ctx, cmd)

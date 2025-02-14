@@ -2,22 +2,22 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 
+	"github.com/rezaAmiri123/ftgogoV3/internal/postgres"
 	"github.com/rezaAmiri123/ftgogoV3/kitchen/internal/domain"
 	"github.com/stackus/errors"
 )
 
 type TicketReopsitory struct {
 	tableName string
-	db        *sql.DB
+	db        postgres.DB
 }
 
 var _ domain.TicketRepository = (*TicketReopsitory)(nil)
 
-func NewTicketReopsitory(tableName string, db *sql.DB) TicketReopsitory {
+func NewTicketReopsitory(tableName string, db postgres.DB) TicketReopsitory {
 	return TicketReopsitory{
 		tableName: tableName,
 		db:        db,

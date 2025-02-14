@@ -5,10 +5,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rezaAmiri123/ftgogoV3/internal/am"
+	"github.com/rezaAmiri123/ftgogoV3/internal/amotel"
+	"github.com/rezaAmiri123/ftgogoV3/internal/amprom"
 	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
 	"github.com/rezaAmiri123/ftgogoV3/internal/es"
 	"github.com/rezaAmiri123/ftgogoV3/internal/jetstream"
 	pg "github.com/rezaAmiri123/ftgogoV3/internal/postgres"
+	"github.com/rezaAmiri123/ftgogoV3/internal/postgresotel"
 	"github.com/rezaAmiri123/ftgogoV3/internal/registry"
 	"github.com/rezaAmiri123/ftgogoV3/internal/system"
 	"github.com/rezaAmiri123/ftgogoV3/internal/tm"
@@ -27,9 +30,10 @@ func (m *Module) Startup(ctx context.Context, mono system.Service) (err error) {
 }
 
 func Root(ctx context.Context, svc system.Service) (err error) {
+	serviceName := "orders"
 	defer func() {
 		if err != nil {
-			err = errors.Wrap(err, "order module")
+			err = errors.Wrap(err, "orders module")
 		}
 	}()
 
@@ -42,31 +46,42 @@ func Root(ctx context.Context, svc system.Service) (err error) {
 		return err
 	}
 
-	jsStream := jetstream.NewStream(svc.Config().Nats.Stream, svc.JS(), svc.Logger())
-	outboxStore := pg.NewOutboxStore("orders.outbox", svc.DB())
-	inboxStore := pg.NewInboxStore("orders.inbox", svc.DB())
-	inboxHandlerMiddleware := tm.NewInboxHandlerMiddleware(inboxStore)
-	stream := am.RawMessageStreamWithMiddleware(
-		jsStream,
-		tm.NewOutboxStreamMiddleware(outboxStore),
+	var stream am.MessageStream
+	stream = jetstream.NewStream(svc.Config().Nats.Stream, svc.JS(), svc.Logger())
+	outboxStore := pg.NewOutboxStore("orders.outbox", postgresotel.Trace(svc.DB()))
+	inboxStore := pg.NewInboxStore("orders.inbox", postgresotel.Trace(svc.DB()))
+
+	sentCounter := amprom.SentMessageCounter(serviceName)
+	messagePublisher := am.NewMessagePublisher(
+		stream,
+		amotel.OtelMessageContextInjector(),
+		sentCounter,
+		tm.OutboxPublisher(outboxStore),
 	)
-	eventStream := am.NewEventStream(reg, stream)
-	replyStream := am.NewReplyStream(reg, stream)
+	messageSubscriber := am.NewMessageSubscriber(
+		stream,
+		amotel.OtelMessageContextExtractor(),
+		amprom.ReceivedMessagesCounter(serviceName),
+	)
+	eventPublisher := am.NewEventPublisher(reg, messagePublisher)
+	replyPublisher := am.NewReplyPublisher(reg, messagePublisher)
+
 	domainDispatcher := ddd.NewEventDispatcher[ddd.Event]()
 	aggregateStore := es.AggregateStoreWithMiddleware(
-		pg.NewEventStore("orders.events", svc.DB(), reg),
-		pg.NewSnapshotStore("orders.snapshots", svc.DB(), reg),
+		pg.NewEventStore("orders.events", postgresotel.Trace(svc.DB()), reg),
+		pg.NewSnapshotStore("orders.snapshots", postgresotel.Trace(svc.DB()), reg),
 	)
-	orders := es.NewAggregateRepository[*domain.Order](domain.OrderAggregate, reg, aggregateStore)
+	orders := es.NewAggregateRepository[*domain.Order](
+		domain.OrderAggregate, 
+		reg, 
+		aggregateStore,
+	)
 	conn, err := grpc.Dial(ctx, svc.Config().Rpc.Address())
 	if err != nil {
 		return err
 	}
 
 	restaurants := grpc.NewRestaurantRepository(conn)
-	// consumers := grpc.NewConsumerRepository(conn)
-	// kitchens := grpc.NewKitchenRepository(conn)
-	// accounts := grpc.NewAccountRepository(conn)
 
 	// setup application
 	var app application.App
@@ -74,25 +89,25 @@ func Root(ctx context.Context, svc system.Service) (err error) {
 	app = logging.LogApplicationAccess(app, svc.Logger())
 
 	domainEventHandlers := logging.LogEventHandlerAccess[ddd.Event](
-		handlers.NewDomainEventHandlers(eventStream),
+		handlers.NewDomainEventHandlers(eventPublisher),
 		"DomainEvents", svc.Logger(),
 	)
-	commandHandlers := logging.LogCommandHandlerAccess[ddd.Command](
-		handlers.NewCommandHandlers(app),
-		"Commands", svc.Logger(),
+
+	commandHandlers := am.LogMessageHandlerAccess(
+		handlers.NewCommandHandlers(reg, app, replyPublisher, tm.InboxHandler(inboxStore)),
+		serviceName, "Commands", svc.Logger(),
 	)
-	cmdMsgHandlers := am.NewCommandMessageHandler(reg, replyStream, commandHandlers)
-	msgHandlerMiddleware := am.RawMessageHandlerWithMiddleware(cmdMsgHandlers, inboxHandlerMiddleware)
+
 	// setup Driver adapters
 	if err := grpc.RegisterServer(app, svc.RPC()); err != nil {
 		return err
 	}
 	handlers.RegisterDomainEventHandlers(domainDispatcher, domainEventHandlers)
-	if err := handlers.RegisterCommandHandlers(jsStream, msgHandlerMiddleware); err != nil {
+	if err = handlers.RegisterCommandHandlers(messageSubscriber, commandHandlers); err != nil {
 		return err
 	}
 
-	outboxProcessor := tm.NewOutboxProcessor(jsStream, pg.NewOutboxStore("orders.outbox", svc.DB()))
+	outboxProcessor := tm.NewOutboxProcessor(stream, pg.NewOutboxStore("orders.outbox", svc.DB()))
 	go func() {
 		if err := outboxProcessor.Start(ctx); err != nil {
 			logger := svc.Logger()

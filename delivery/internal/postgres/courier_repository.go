@@ -8,17 +8,18 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rezaAmiri123/ftgogoV3/delivery/internal/domain"
+	"github.com/rezaAmiri123/ftgogoV3/internal/postgres"
 	"github.com/stackus/errors"
 )
 
 type CourierRepository struct {
 	tableName string
-	db        *sql.DB
+	db        postgres.DB
 }
 
 var _ domain.CourierRepository = (*CourierRepository)(nil)
 
-func NewCourierRepository(tableName string, db *sql.DB) CourierRepository {
+func NewCourierRepository(tableName string, db postgres.DB) CourierRepository {
 	return CourierRepository{
 		tableName: tableName,
 		db:        db,

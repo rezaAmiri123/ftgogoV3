@@ -7,18 +7,18 @@ import (
 )
 
 type stream struct {
-	subscriptions map[string][]am.RawMessageHandler
+	subscriptions map[string][]am.MessageHandler
 }
 
-var _ am.RawMessageStream = (*stream)(nil)
+var _ am.MessageStream = (*stream)(nil)
 
 func NewStream() stream {
 	return stream{
-		subscriptions: make(map[string][]am.RawMessageHandler),
+		subscriptions: make(map[string][]am.MessageHandler),
 	}
 }
 
-func (t stream) Publish(ctx context.Context, topicName string, v am.RawMessage) error {
+func (t stream) Publish(ctx context.Context, topicName string, v am.Message) error {
 	for _, handler := range t.subscriptions[topicName] {
 		err := handler.HandleMessage(ctx, &rawMessage{v})
 		if err != nil {
@@ -28,7 +28,7 @@ func (t stream) Publish(ctx context.Context, topicName string, v am.RawMessage) 
 	return nil
 }
 
-func (t stream) Subscribe(topicName string, handler am.RawMessageHandler, options ...am.SubscriberOption) (am.Subscription, error) {
+func (t stream) Subscribe(topicName string, handler am.MessageHandler, options ...am.SubscriberOption) (am.Subscription, error) {
 	cfg := am.NewSubscriberConfig(options)
 
 	var filters map[string]struct{}
@@ -39,7 +39,7 @@ func (t stream) Subscribe(topicName string, handler am.RawMessageHandler, option
 		}
 	}
 
-	fn := am.RawMessageHandlerFunc(func(ctx context.Context, msg am.IncomingRawMessage) error {
+	fn := am.MessageHandlerFunc(func(ctx context.Context, msg am.IncomingMessage) error {
 		if filters != nil {
 			if _, exists := filters[msg.MessageName()]; !exists {
 				return nil

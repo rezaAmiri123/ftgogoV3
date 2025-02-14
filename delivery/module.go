@@ -10,9 +10,11 @@ import (
 	"github.com/rezaAmiri123/ftgogoV3/delivery/internal/logging"
 	"github.com/rezaAmiri123/ftgogoV3/delivery/internal/postgres"
 	"github.com/rezaAmiri123/ftgogoV3/internal/am"
-	"github.com/rezaAmiri123/ftgogoV3/internal/ddd"
+	"github.com/rezaAmiri123/ftgogoV3/internal/amotel"
+	"github.com/rezaAmiri123/ftgogoV3/internal/amprom"
 	"github.com/rezaAmiri123/ftgogoV3/internal/jetstream"
 	pg "github.com/rezaAmiri123/ftgogoV3/internal/postgres"
+	"github.com/rezaAmiri123/ftgogoV3/internal/postgresotel"
 	"github.com/rezaAmiri123/ftgogoV3/internal/registry"
 	"github.com/rezaAmiri123/ftgogoV3/internal/system"
 	"github.com/rezaAmiri123/ftgogoV3/internal/tm"
@@ -26,6 +28,7 @@ func (m *Module) Startup(ctx context.Context, mono system.Service) (err error) {
 }
 
 func Root(ctx context.Context, svc system.Service) (err error) {
+	serviceName := "delivery"
 	defer func() {
 		if err != nil {
 			err = errors.Wrap(err, "delivery module")
@@ -38,17 +41,18 @@ func Root(ctx context.Context, svc system.Service) (err error) {
 		return err
 	}
 
-	jsStream := jetstream.NewStream(svc.Config().Nats.Stream, svc.JS(), svc.Logger())
-	outboxStore := pg.NewOutboxStore("delivery.outbox", svc.DB())
-	inboxStore := pg.NewInboxStore("delivery.inbox", svc.DB())
-	inboxHandlerMiddleware := tm.NewInboxHandlerMiddleware(inboxStore)
-	stream := am.RawMessageStreamWithMiddleware(
-		jsStream,
-		tm.NewOutboxStreamMiddleware(outboxStore),
+	var stream am.MessageStream
+	stream = jetstream.NewStream(svc.Config().Nats.Stream, svc.JS(), svc.Logger())
+	inboxStore := pg.NewInboxStore("delivery.inbox", postgresotel.Trace(svc.DB()))
+
+	messageSubscriber := am.NewMessageSubscriber(
+		stream,
+		amotel.OtelMessageContextExtractor(),
+		amprom.ReceivedMessagesCounter(serviceName),
 	)
 
-	deliveries := postgres.NewDeliveryRepository("delivery.deliveries", svc.DB())
-	couriers := postgres.NewCourierRepository("delivery.couriers", svc.DB())
+	deliveries := postgres.NewDeliveryRepository("delivery.deliveries", postgresotel.Trace(svc.DB()))
+	couriers := postgres.NewCourierRepository("delivery.couriers", postgresotel.Trace(svc.DB()))
 	conn, err := grpc.Dial(ctx, svc.Config().Rpc.Address())
 	if err != nil {
 		return err
@@ -64,18 +68,16 @@ func Root(ctx context.Context, svc system.Service) (err error) {
 		return err
 	}
 
-	integrationEventHandlers := logging.LogEventHandlerAccess[ddd.Event](
-		handlers.NewIntegrationHandlers(app),
-		"IntegrationEvents", svc.Logger(),
+	integrationEventHandlers := am.LogMessageHandlerAccess(
+		handlers.NewIntegrationHandlers(reg, app, tm.InboxHandler(inboxStore)),
+		serviceName, "IntegrationEvents", svc.Logger(),
 	)
-	eventMsgHandlers := am.NewEventMessageHandler(reg, integrationEventHandlers)
-	msgHandlerMiddleware := am.RawMessageHandlerWithMiddleware(eventMsgHandlers, inboxHandlerMiddleware)
 
-	if err = handlers.RegisterIntegrationEventHandlers(stream, msgHandlerMiddleware); err != nil {
+	if err = handlers.RegisterIntegrationEventHandlers(messageSubscriber, integrationEventHandlers); err != nil {
 		return err
 	}
 
-	outboxProcessor := tm.NewOutboxProcessor(jsStream, pg.NewOutboxStore("delivery.outbox", svc.DB()))
+	outboxProcessor := tm.NewOutboxProcessor(stream, pg.NewOutboxStore("delivery.outbox", svc.DB()))
 	go func() {
 		if err := outboxProcessor.Start(ctx); err != nil {
 			logger := svc.Logger()
