@@ -12,12 +12,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/ratelimit"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
-	"github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/timeout"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/ratelimit"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+
 	// grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 
 	"github.com/nats-io/nats.go"
@@ -36,6 +37,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -179,7 +181,28 @@ func (s *System) initMux() {
 	s.mux.Method("Get", "/metrics", promhttp.Handler())
 }
 
+const (
+	maxConnectionIdle = 5
+	gRPCTimeout       = 15
+	maxConnectionAge  = 5
+	gRPCTime          = 10
+)
 func (s *System) initRpc() {
+	var opts []grpc.ServerOption
+	opts = append(opts,
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			MaxConnectionIdle: maxConnectionIdle * time.Minute,
+			Timeout:           gRPCTimeout * time.Second,
+			MaxConnectionAge:  maxConnectionAge * time.Minute,
+			Time:              gRPCTime * time.Minute,
+		}),
+		grpc.ChainUnaryInterceptor(
+			grpc_ctxtags.UnaryServerInterceptor(),
+			otelgrpc.UnaryServerInterceptor(),
+			grpc_prometheus.UnaryServerInterceptor(),
+		),
+	)
+
 	s.rpc = grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			recovery.UnaryServerInterceptor(),
