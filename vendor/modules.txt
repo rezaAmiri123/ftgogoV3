@@ -171,17 +171,16 @@ github.com/google/uuid
 ## explicit; go 1.14
 github.com/grpc-ecosystem/go-grpc-middleware
 github.com/grpc-ecosystem/go-grpc-middleware/tags
-# github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1
-## explicit; go 1.19
-github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus
 # github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.2.0
 ## explicit; go 1.21
-github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors
 github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/ratelimit
 github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery
 github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry
 github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/timeout
 github.com/grpc-ecosystem/go-grpc-middleware/v2/metadata
+# github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
+## explicit
+github.com/grpc-ecosystem/go-grpc-prometheus
 # github.com/grpc-ecosystem/grpc-gateway/v2 v2.25.1
 ## explicit; go 1.22.0
 github.com/grpc-ecosystem/grpc-gateway/v2/internal/httprule
@@ -575,6 +574,7 @@ golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 # golang.org/x/net v0.34.0
 ## explicit; go 1.18
+golang.org/x/net/context
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
