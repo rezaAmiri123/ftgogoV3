@@ -6,6 +6,8 @@ import (
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 	grpc_timeout "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/timeout"
+	"github.com/rezaAmiri123/ftgogoV3/internal/rpc"
+	"github.com/rs/zerolog"
 	"github.com/stackus/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
@@ -25,7 +27,7 @@ func clientErrorUnrayInterceptor() grpc.UnaryClientInterceptor {
 	}
 }
 
-func Dial(ctx context.Context, endpoint string) (conn *grpc.ClientConn, err error) {
+func Dial(ctx context.Context, endpoint string, logger zerolog.Logger) (conn *grpc.ClientConn, err error) {
 	retryOpts := []grpc_retry.CallOption{
 		grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffLinear)),
 		grpc_retry.WithCodes(codes.NotFound, codes.Aborted),
@@ -36,6 +38,8 @@ func Dial(ctx context.Context, endpoint string) (conn *grpc.ClientConn, err erro
 		endpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
+			rpc.RequestContextUnaryClientInterceptor,
+			rpc.WithUnaryClientLogging(logger),
 			grpc_timeout.UnaryClientInterceptor(timeout),
 			grpc_retry.UnaryClientInterceptor(retryOpts...),
 			clientErrorUnrayInterceptor(),

@@ -72,11 +72,11 @@ func Root(ctx context.Context, svc system.Service) (err error) {
 		pg.NewSnapshotStore("orders.snapshots", postgresotel.Trace(svc.DB()), reg),
 	)
 	orders := es.NewAggregateRepository[*domain.Order](
-		domain.OrderAggregate, 
-		reg, 
+		domain.OrderAggregate,
+		reg,
 		aggregateStore,
 	)
-	conn, err := grpc.Dial(ctx, svc.Config().Rpc.Address())
+	conn, err := grpc.Dial(ctx, svc.Config().Rpc.Address(), svc.Logger())
 	if err != nil {
 		return err
 	}

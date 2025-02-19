@@ -17,7 +17,7 @@ func (m *Module) Startup(ctx context.Context, mono system.Service) (err error) {
 }
 
 func Root(ctx context.Context, svc system.Service) (err error) {
-	conn, err := grpc.Dial(ctx, svc.Config().Rpc.Address())
+	conn, err := grpc.Dial(ctx, svc.Config().Rpc.Address(), svc.Logger())
 	if err != nil {
 		return err
 	}

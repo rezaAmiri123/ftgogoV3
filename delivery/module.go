@@ -53,7 +53,7 @@ func Root(ctx context.Context, svc system.Service) (err error) {
 
 	deliveries := postgres.NewDeliveryRepository("delivery.deliveries", postgresotel.Trace(svc.DB()))
 	couriers := postgres.NewCourierRepository("delivery.couriers", postgresotel.Trace(svc.DB()))
-	conn, err := grpc.Dial(ctx, svc.Config().Rpc.Address())
+	conn, err := grpc.Dial(ctx, svc.Config().Rpc.Address(), svc.Logger())
 	if err != nil {
 		return err
 	}

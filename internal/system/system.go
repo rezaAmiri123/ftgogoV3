@@ -14,14 +14,16 @@ import (
 	"github.com/go-chi/cors"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	_ "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/ratelimit"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
+	_ "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/nats-io/nats.go"
 	"github.com/pressly/goose/v3"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rezaAmiri123/ftgogoV3/internal/config"
 	"github.com/rezaAmiri123/ftgogoV3/internal/logger"
+	"github.com/rezaAmiri123/ftgogoV3/internal/rpc"
 	"github.com/rezaAmiri123/ftgogoV3/internal/waiter"
+	"github.com/rezaAmiri123/ftgogoV3/internal/web"
 	"github.com/rs/zerolog"
 	"github.com/stackus/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -67,10 +69,10 @@ func NewSystem(cfg config.AppConfig) (*System, error) {
 		return nil, err
 	}
 
+	s.initLogger()
 	s.initMux()
 	s.initRpc()
-	s.initLogger()
-
+	
 	return s, nil
 }
 
@@ -143,8 +145,14 @@ func (s *System) initLogger() {
 
 func (s *System) initMux() {
 	s.mux = chi.NewMux()
+	// log
 	s.mux.Use(
-		middleware.Recoverer,
+		web.ZeroLogger(s.logger),
+		web.RequestContext,
+	)
+
+	s.mux.Use(
+		// middleware.Recoverer,
 		middleware.Compress(5),
 		middleware.Timeout(time.Second*60),
 		middleware.Heartbeat("/liveness"),
@@ -193,12 +201,14 @@ func (s *System) initRpc() {
 			Time:              gRPCTime * time.Minute,
 		}),
 		grpc.ChainUnaryInterceptor(
-			recovery.UnaryServerInterceptor(),
+			rpc.RequestContextUnaryServerInterceptor,
+			rpc.WithUnaryServerLogging(s.logger),
 			serverErrorUnaryInterceptor(),
 			grpc_ctxtags.UnaryServerInterceptor(),
 			otelgrpc.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
 			// ratelimit.UnaryServerInterceptor(),
+			// recovery.UnaryServerInterceptor(),
 		),
 	)
 
